@@ -223,16 +223,19 @@ def render_html(grouped):
 def send_email(html_body):
     sender = os.getenv("SENDER_EMAIL")
     password = os.getenv("SENDER_APP_PASSWORD")
-    receiver = os.getenv("RECEIVER_EMAIL")
+    receiver_raw = os.getenv("RECEIVER_EMAIL")
 
-    if not all([sender, password, receiver]):
+    if not all([sender, password, receiver_raw]):
         raise ValueError("Missing one or more email env vars: SENDER_EMAIL, SENDER_APP_PASSWORD, RECEIVER_EMAIL")
+
+    # Support comma-separated list of recipients
+    receivers = [r.strip() for r in receiver_raw.split(",") if r.strip()]
 
     today = datetime.now().strftime("%B %d, %Y")
     msg = MIMEMultipart("alternative")
     msg["Subject"] = f"UPSC News Digest – {today}"
     msg["From"] = sender
-    msg["To"] = receiver
+    msg["To"] = ", ".join(receivers)
 
     from email.mime.text import MIMEText
     msg.attach(MIMEText(html_body, "html"))
@@ -240,7 +243,8 @@ def send_email(html_body):
     context = ssl.create_default_context()
     with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as server:
         server.login(sender, password)
-        server.sendmail(sender, receiver, msg.as_string())
+        server.sendmail(sender, receivers, msg.as_string())
+    print(f"  Sent to: {', '.join(receivers)}")
 
 
 if __name__ == "__main__":
