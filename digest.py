@@ -71,16 +71,17 @@ def classify_articles(articles):
             f"Summary: {a['summary'][:300]}\n"
         )
 
-    prompt = f"""You are a UPSC exam preparation assistant. Analyze the following news articles and classify each one.
+    prompt = f"""You are a UPSC exam preparation assistant. Analyze the following news articles.
 
-For each article return a JSON object with these fields:
-- index: the article index number (int)
-- topic: one of exactly these topics: {', '.join(sorted(TOPIC_COLORS.keys()))}, Not UPSC Relevant
-- summary: 2-sentence plain English summary of the article
-- upsc_angle: 1-line explanation of why this matters for UPSC exam preparation
+Return ONLY a JSON object (no markdown, no code fences, no explanation) with exactly two keys:
 
-Return ONLY a JSON array (no markdown, no code fences, no explanation) containing one object per article.
-Drop articles that are "Not UPSC Relevant" — do not include them in the output at all.
+1. "articles": an array of objects for each UPSC-relevant article with:
+   - index: the article index number (int)
+   - topic: one of exactly these topics: {', '.join(sorted(TOPIC_COLORS.keys()))}, Not UPSC Relevant
+   - summary: detailed 5-7 sentence summary covering what happened, key players/facts, background context, and implications — comprehensive enough that the reader rarely needs to visit the full article
+   Omit articles that are "Not UPSC Relevant" — do not include them in the array at all.
+
+2. "category_angles": an object mapping each topic that appeared in "articles" to an array of 3-5 bullet strings highlighting the collective UPSC exam relevance of all articles under that topic (mention specific GS papers, syllabus topics, or exam themes where applicable).
 
 Articles:
 {articles_text}"""
@@ -99,10 +100,12 @@ Articles:
                 raw = raw.rsplit("```", 1)[0]
             raw = raw.strip()
 
-        classified = json.loads(raw)
+        data = json.loads(raw)
+        classified = data["articles"]
+        category_angles = data.get("category_angles", {})
     except Exception as e:
         print(f"ERROR in Groq classification: {e}")
-        return []
+        return [], {}
 
     # Merge original article data back using index
     result = []
@@ -120,12 +123,11 @@ Articles:
             "source": original["source"],
             "topic": topic,
             "summary": item.get("summary", ""),
-            "upsc_angle": item.get("upsc_angle", ""),
         })
-    return result
+    return result, category_angles
 
 
-def render_html(grouped):
+def render_html(grouped, category_angles):
     today = datetime.now().strftime("%B %d, %Y")
     topics_present = list(grouped.keys())
 
@@ -163,17 +165,24 @@ def render_html(grouped):
               <p style="color:#444;font-size:14px;line-height:1.6;margin:0 0 12px 0;">
                 {a['summary']}
               </p>
-              <div style="background:#e8f4fd;border-left:4px solid #2980b9;
-                          padding:10px 14px;border-radius:4px;margin-bottom:14px;">
-                <span style="font-size:12px;font-weight:700;color:#2980b9;
-                             text-transform:uppercase;letter-spacing:0.5px;">UPSC Angle</span>
-                <p style="color:#1a3c5e;font-size:13px;margin:4px 0 0 0;line-height:1.5;">
-                  {a['upsc_angle']}
-                </p>
-              </div>
               <a href="{a['link']}" style="color:{color};font-size:13px;font-weight:600;
                  text-decoration:none;">Read full article &rarr;</a>
             </div>"""
+
+        angles = category_angles.get(topic, [])
+        angles_html = ""
+        if angles:
+            bullets = "".join(
+                f'<li style="margin:4px 0;color:#78350f;font-size:13px;line-height:1.5;">{b}</li>'
+                for b in angles
+            )
+            angles_html = f"""
+          <div style="background:#fefce8;border-left:4px solid #f59e0b;
+                      padding:12px 16px;border-radius:4px;margin-bottom:20px;">
+            <span style="font-size:12px;font-weight:700;color:#b45309;
+                         text-transform:uppercase;letter-spacing:0.5px;">UPSC Exam Angles</span>
+            <ul style="margin:8px 0 0 0;padding-left:18px;">{bullets}</ul>
+          </div>"""
 
         sections_html += f"""
         <div id="{anchor}" style="margin-bottom:36px;">
@@ -181,6 +190,7 @@ def render_html(grouped):
                      color:#fff;border-radius:6px;font-size:18px;font-weight:700;">
             {topic}
           </h2>
+          {angles_html}
           {cards_html}
         </div>"""
 
@@ -262,7 +272,7 @@ if __name__ == "__main__":
 
     print("\n[2/4] Classifying articles with Llama 3.3 via Groq (single API call)...")
     try:
-        classified = classify_articles(articles)
+        classified, category_angles = classify_articles(articles)
         print(f"  UPSC relevant: {len(classified)} articles")
     except Exception as e:
         print(f"FATAL: Groq classification failed: {e}")
@@ -277,7 +287,7 @@ if __name__ == "__main__":
         grouped = collections.defaultdict(list)
         for a in classified:
             grouped[a["topic"]].append(a)
-        html = render_html(grouped)
+        html = render_html(grouped, category_angles)
         print(f"  Topics covered: {', '.join(grouped.keys())}")
     except Exception as e:
         print(f"FATAL: HTML rendering failed: {e}")
