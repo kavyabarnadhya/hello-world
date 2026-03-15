@@ -7,7 +7,7 @@ from datetime import datetime
 
 import feedparser
 from dotenv import load_dotenv
-from google import genai
+from groq import Groq
 
 load_dotenv()
 
@@ -58,7 +58,7 @@ def fetch_articles():
 
 
 def classify_articles(articles):
-    client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+    client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
     articles_text = ""
     for i, a in enumerate(articles):
@@ -84,11 +84,12 @@ Articles:
 {articles_text}"""
 
     try:
-        response = client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=prompt,
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.2,
         )
-        raw = response.text.strip()
+        raw = response.choices[0].message.content.strip()
         # Strip markdown code fences if present
         if raw.startswith("```"):
             raw = raw.split("\n", 1)[-1]
@@ -98,7 +99,7 @@ Articles:
 
         classified = json.loads(raw)
     except Exception as e:
-        print(f"ERROR in Gemini classification: {e}")
+        print(f"ERROR in Groq classification: {e}")
         return []
 
     # Merge original article data back using index
@@ -212,7 +213,7 @@ def render_html(grouped):
 
     <!-- Footer -->
     <div style="text-align:center;padding:20px;color:#999;font-size:12px;">
-      Generated automatically by UPSC News Digest &bull; Powered by Gemini 2.0 Flash
+      Generated automatically by UPSC News Digest &bull; Powered by Llama 3.3 via Groq
     </div>
   </div>
 </body>
@@ -258,12 +259,12 @@ if __name__ == "__main__":
         print(f"FATAL: Could not fetch articles: {e}")
         raise
 
-    print("\n[2/4] Classifying articles with Gemini Flash (single API call)...")
+    print("\n[2/4] Classifying articles with Llama 3.3 via Groq (single API call)...")
     try:
         classified = classify_articles(articles)
         print(f"  UPSC relevant: {len(classified)} articles")
     except Exception as e:
-        print(f"FATAL: Gemini classification failed: {e}")
+        print(f"FATAL: Groq classification failed: {e}")
         raise
 
     if not classified:
