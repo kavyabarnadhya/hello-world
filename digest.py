@@ -2,6 +2,8 @@ import os
 import json
 import smtplib
 import ssl
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 import collections
 from datetime import datetime
 
@@ -238,7 +240,6 @@ def send_email(html_body):
     msg["From"] = sender
     msg["To"] = ", ".join(receivers)
 
-    from email.mime.text import MIMEText
     msg.attach(MIMEText(html_body, "html"))
 
     context = ssl.create_default_context()
