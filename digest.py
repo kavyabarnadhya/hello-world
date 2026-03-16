@@ -40,7 +40,7 @@ def fetch_articles():
     for source, url in FEEDS.items():
         try:
             feed = feedparser.parse(url)
-            entries = feed.entries[:8]
+            entries = feed.entries[:5]
             for entry in entries:
                 summary = ""
                 if hasattr(entry, "summary"):
@@ -91,6 +91,7 @@ Articles:
             model="llama-3.3-70b-versatile",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.2,
+            max_tokens=8000,
         )
         raw = response.choices[0].message.content.strip()
         # Strip markdown code fences if present
