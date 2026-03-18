@@ -14,13 +14,13 @@ from groq import Groq
 load_dotenv()
 
 FEEDS = {
-    "The Hindu":         "https://www.thehindu.com/news/national/feeder/default.rss",
-    "Indian Express":    "https://indianexpress.com/section/india/feed/",
-    "The Print":         "https://theprint.in/category/india/feed/",
-    "LiveMint":          "https://www.livemint.com/rss/news",
-    "BBC World":         "https://feeds.bbci.co.uk/news/world/rss.xml",
-    "PIB":               "https://pib.gov.in/RssMain.aspx",
-    "Business Standard": "https://www.business-standard.com/rss/economy-policy-10702.rss",
+    "The Hindu":       "https://www.thehindu.com/news/national/feeder/default.rss",
+    "Indian Express":  "https://indianexpress.com/section/india/feed/",
+    "The Print":       "https://theprint.in/category/india/feed/",
+    "LiveMint":        "https://www.livemint.com/rss/news",
+    "BBC World":       "https://feeds.bbci.co.uk/news/world/rss.xml",
+    "Economic Times":  "https://economictimes.indiatimes.com/news/economy/rssfeeds/1373380680.cms",
+    "DD News":         "https://ddnews.gov.in/en/feed/",
 }
 
 TOPIC_COLORS = {
@@ -109,14 +109,9 @@ Articles:
             messages=[{"role": "user", "content": prompt}],
             temperature=0.2,
             max_tokens=8000,
+            response_format={"type": "json_object"},
         )
         raw = response.choices[0].message.content.strip()
-        # Strip markdown code fences if present
-        if raw.startswith("```"):
-            raw = raw.split("\n", 1)[-1]
-            if raw.endswith("```"):
-                raw = raw.rsplit("```", 1)[0]
-            raw = raw.strip()
 
         data = json.loads(raw)
         classified = data["articles"]
