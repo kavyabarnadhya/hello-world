@@ -14,11 +14,13 @@ from groq import Groq
 load_dotenv()
 
 FEEDS = {
-    "The Hindu": "https://www.thehindu.com/news/feeder/default.rss",
-    "Indian Express": "https://indianexpress.com/feed/",
-    "The Print": "https://theprint.in/category/india/feed/",
-    "LiveMint": "https://www.livemint.com/rss/news",
-    "BBC World": "https://feeds.bbci.co.uk/news/world/rss.xml",
+    "The Hindu":         "https://www.thehindu.com/news/national/feeder/default.rss",
+    "Indian Express":    "https://indianexpress.com/section/india/feed/",
+    "The Print":         "https://theprint.in/category/india/feed/",
+    "LiveMint":          "https://www.livemint.com/rss/news",
+    "BBC World":         "https://feeds.bbci.co.uk/news/world/rss.xml",
+    "PIB":               "https://pib.gov.in/RssMain.aspx",
+    "Business Standard": "https://www.business-standard.com/rss/economy-policy-10702.rss",
 }
 
 TOPIC_COLORS = {
@@ -34,13 +36,24 @@ TOPIC_COLORS = {
 
 VALID_TOPICS = set(TOPIC_COLORS.keys()) | {"Not UPSC Relevant"}
 
+TOPIC_ORDER = [
+    "Polity & Governance",
+    "Economy",
+    "Social Issues",
+    "Environment & Ecology",
+    "Science & Technology",
+    "Security & Defence",
+    "History & Culture",
+    "International Relations",
+]
+
 
 def fetch_articles():
     articles = []
     for source, url in FEEDS.items():
         try:
             feed = feedparser.parse(url)
-            entries = feed.entries[:5]
+            entries = feed.entries[:3]
             for entry in entries:
                 summary = ""
                 if hasattr(entry, "summary"):
@@ -71,7 +84,11 @@ def classify_articles(articles):
             f"Summary: {a['summary'][:300]}\n"
         )
 
-    prompt = f"""You are a UPSC exam preparation assistant. Analyze the following news articles.
+    prompt = f"""You are a UPSC exam preparation assistant focused on the Indian Civil Services Examination.
+
+**Priority:** Strongly prefer articles with a direct India angle — Indian polity, governance, legislation, constitutional matters, Indian economy, Indian social issues, Indian environment policy, Indian science initiatives, India's defence, or Indian history and culture.
+
+**International news:** Include purely international stories only if they are clearly significant for GS-II International Relations — major geopolitical events, major international agreements, or global developments with direct implications for India. Routine foreign news without clear exam relevance should be classified as "Not UPSC Relevant".
 
 Return ONLY a JSON object (no markdown, no code fences, no explanation) with exactly two keys:
 
@@ -285,9 +302,10 @@ if __name__ == "__main__":
 
     print("\n[3/4] Rendering HTML email...")
     try:
-        grouped = collections.defaultdict(list)
+        grouped_raw = collections.defaultdict(list)
         for a in classified:
-            grouped[a["topic"]].append(a)
+            grouped_raw[a["topic"]].append(a)
+        grouped = {t: grouped_raw[t] for t in TOPIC_ORDER if t in grouped_raw}
         html = render_html(grouped, category_angles)
         print(f"  Topics covered: {', '.join(grouped.keys())}")
     except Exception as e:
