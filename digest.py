@@ -90,12 +90,15 @@ def classify_articles(articles):
 
 **International news:** Include purely international stories only if they are clearly significant for GS-II International Relations — major geopolitical events, major international agreements, or global developments with direct implications for India. Routine foreign news without clear exam relevance should be classified as "Not UPSC Relevant".
 
+**Polity & Governance — classify ONLY if the article covers:** constitutional amendments or provisions, Parliament or state legislature bills or debates, Supreme Court or High Court judgments on constitutional or administrative matters, central or state government schemes and policies, electoral reforms (not campaign coverage), administrative or regulatory changes, federal relations, or lokpal/RTI/accountability mechanisms.
+**Do NOT classify as Polity & Governance:** party political statements, opposition rhetoric, electoral campaign news, political rallies, intra-party matters, or opinion pieces on politics without a substantive constitutional or policy dimension — these are "Not UPSC Relevant" unless they fit another topic such as Economy or Social Issues.
+
 Return ONLY a JSON object (no markdown, no code fences, no explanation) with exactly two keys:
 
 1. "articles": an array of objects for each UPSC-relevant article with:
    - index: the article index number (int)
    - topic: one of exactly these topics: {', '.join(sorted(TOPIC_COLORS.keys()))}, Not UPSC Relevant
-   - summary: detailed 5-7 sentence summary covering what happened, key players/facts, background context, and implications — comprehensive enough that the reader rarely needs to visit the full article
+   - summary: sharp UPSC-focused summary in 4-5 sentences. Lead with the core decision, judgment, or policy. Then include: (a) the specific constitutional article, act, scheme, or regulatory body involved by name; (b) one or two concrete data points such as numbers, percentages, timelines, or committee names; (c) the GS paper and syllabus topic this maps to (e.g. "GS-II: Parliament and State Legislatures"); (d) the exam-relevant implication or significance. Avoid generic commentary, journalistic opinion, and vague statements like "experts say" or "this is significant".
    Omit articles that are "Not UPSC Relevant" — do not include them in the array at all.
 
 2. "category_angles": an object mapping each topic that appeared in "articles" to an array of 3-5 bullet strings highlighting the collective UPSC exam relevance of all articles under that topic (mention specific GS papers, syllabus topics, or exam themes where applicable).
