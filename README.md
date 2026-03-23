@@ -1,23 +1,36 @@
 # UPSC News Digest
 
-A Python script that automatically fetches news from top Indian and international sources, filters and summarizes UPSC-relevant articles using Google Gemini Flash, and sends a beautifully formatted HTML email digest to your Gmail inbox every morning.
+A Python script that fetches news from 7 India-focused sources, filters and summarizes UPSC-relevant articles using **Llama 3.3 70B via Groq**, and sends a beautifully formatted HTML email digest to your inbox every morning at 8:00 AM IST.
 
 ## What it does
 
-- Fetches up to 8 articles each from The Hindu, Indian Express, The Print, LiveMint, and BBC World
-- Sends all articles to **Gemini 2.0 Flash** in a single API call for UPSC-topic classification and summarization
-- Groups articles by UPSC topic: Polity & Governance, Economy, International Relations, Environment & Ecology, Science & Technology, Social Issues, History & Culture, Security & Defence
-- Delivers a clean HTML email with topic-colored sections, article summaries, and UPSC exam angles
-- Runs automatically every day at 8:00 AM IST via GitHub Actions
+- Fetches 3 articles each from 7 sources — **21 articles total** — across Indian national news, economy, governance, and international headlines
+- Sends all articles to **Llama 3.3 70B** (via Groq) in a single API call for UPSC classification and sharp exam-focused summarization
+- Filters out party politics, electoral rhetoric, and routine foreign news — keeps only substantive UPSC-relevant content
+- Groups articles by topic in priority order: Polity & Governance → Economy → Social Issues → Environment & Ecology → Science & Technology → Security & Defence → History & Culture → International Relations
+- Each topic section includes AI-generated **UPSC Exam Angles** (GS paper mapping, syllabus topics, exam themes)
+- Each article summary is structured: core fact → specific act/article/scheme → data points → GS paper → exam implication
+- Delivers a clean HTML email and runs automatically via GitHub Actions
+
+## Sources
+
+| Source | Focus |
+|---|---|
+| The Hindu (National) | Indian national news |
+| Indian Express (India section) | Indian political & policy news |
+| The Print | Indian politics & governance |
+| LiveMint | Economy & markets |
+| BBC World | Major international headlines |
+| Economic Times (Economy & Policy) | Indian economic policy |
+| DD News | Government announcements |
 
 ## Setup
 
-### 1. Get a Gemini API Key
+### 1. Get a Groq API Key
 
-1. Go to [Google AI Studio](https://aistudio.google.com)
-2. Sign in with your Google account
-3. Click **Get API key** → **Create API key**
-4. Copy the key
+1. Go to [console.groq.com](https://console.groq.com)
+2. Sign in and navigate to **API Keys**
+3. Click **Create API Key** and copy it
 
 ### 2. Generate a Gmail App Password
 
@@ -35,10 +48,10 @@ In your GitHub repository go to **Settings → Secrets and variables → Actions
 |---|---|
 | `SENDER_EMAIL` | Your Gmail address (e.g. `yourname@gmail.com`) |
 | `SENDER_APP_PASSWORD` | The 16-character App Password from step 2 |
-| `RECEIVER_EMAIL` | Email address to receive the digest |
-| `GEMINI_API_KEY` | Your Gemini API key from step 1 |
+| `RECEIVER_EMAIL` | Email address(es) to receive the digest (comma-separated for multiple) |
+| `GROQ_API_KEY` | Your Groq API key from step 1 |
 
-The workflow runs automatically at **2:30 AM UTC (8:00 AM IST)** every day. You can also trigger it manually from the **Actions** tab → **UPSC Daily News Digest** → **Run workflow**.
+The workflow runs automatically at **2:30 AM UTC (8:00 AM IST)** every day. You can also trigger it manually from the **Actions** tab → **Run UPSC News Digest** → **Run workflow**.
 
 ### 4. Run locally
 
@@ -71,5 +84,5 @@ upsc-news-digest/
 ## Dependencies
 
 - `feedparser` — RSS feed parsing
-- `google-genai` — Google Gemini API SDK
+- `groq` — Groq API SDK (Llama 3.3 70B)
 - `python-dotenv` — Local `.env` file loading
