@@ -146,8 +146,8 @@ def fetch_from_feed(url, source_name, limit=3):
             # and the original summary is not displayed in the final email.
             summary = summary[:400]
             articles.append({
-                "title": entry.get("title", ""),
-                "link":  entry.get("link", ""),
+                "title": str(entry.get("title", ""))[:200],
+                "link":  str(entry.get("link", ""))[:500],
                 "summary": summary,
                 "source": source_name,
             })
@@ -172,6 +172,8 @@ def fetch_articles():
 
 
 def classify_articles(articles):
+    # Security: Limit the number of articles to process to prevent token limit issues and overhead
+    articles = articles[:50]
     client = get_groq_client()
 
     # Optimization: Use list-based join for efficient string building
@@ -432,7 +434,7 @@ def validate_env():
     and follow basic format expectations before starting the process.
     """
     required = ["SENDER_EMAIL", "SENDER_APP_PASSWORD", "RECEIVER_EMAIL", "GROQ_API_KEY"]
-    missing = [var for var in required if not os.getenv(var)]
+    missing = [var for var in required if not os.getenv(var) or not str(os.getenv(var)).strip()]
     if missing:
         raise ValueError(f"Missing required environment variables: {', '.join(missing)}")
 
@@ -446,6 +448,8 @@ def validate_env():
     receivers = [r.strip() for r in os.getenv("RECEIVER_EMAIL", "").split(",") if r.strip()]
     if not receivers:
         raise ValueError("RECEIVER_EMAIL is empty or contains no valid addresses")
+    if len(receivers) > 50:
+        raise ValueError(f"Too many recipients ({len(receivers)}). Maximum allowed is 50.")
     for r in receivers:
         if not email_regex.match(r):
             raise ValueError(f"RECEIVER_EMAIL contains an invalid email address: {r}")
@@ -471,7 +475,8 @@ def send_email(html_body):
     msg.attach(MIMEText(html_body, "html"))
 
     context = ssl.create_default_context()
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as server:
+    # Security: Set explicit timeout to prevent hanging on slow connections
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context, timeout=30) as server:
         server.login(sender, password)
         server.sendmail(sender, receivers, msg.as_string())
     # Security: Mask recipient emails in logs to protect PII
