@@ -37,9 +37,12 @@ def clean_text(text):
         return ""
     # Optimization: Truncate raw input to 2000 chars to avoid expensive processing on large payloads
     text = text[:2000]
-    # Unescape HTML entities first so we don't accidentally leave things like &lt; in the text
-    text = html.unescape(text)
-    return TAG_RE.sub("", text).strip()
+    # Optimization: Only unescape and strip tags if they are actually present to save CPU cycles
+    if "&" in text:
+        text = html.unescape(text)
+    if "<" in text:
+        text = TAG_RE.sub("", text)
+    return text.strip()
 
 
 # Initialize Groq client once at the module level for resource reuse
@@ -118,6 +121,12 @@ TOPIC_ICONS = {
     "Environment & Ecology": "🌱",
     "Social Issues": "🤝",
     "Science & Technology": "🔬",
+}
+
+# Optimization: Pre-calculate HTML icon tags to save cycles during rendering
+TOPIC_ICON_TAGS = {
+    topic: f'<span aria-hidden="true">{icon} </span>'
+    for topic, icon in TOPIC_ICONS.items()
 }
 
 # Optimization: Pre-calculate sorted topic list string for the LLM prompt
@@ -282,7 +291,8 @@ def render_html(grouped, category_angles):
         count = len(grouped[topic])
         safe_name = SAFE_TOPIC_NAMES[topic]
         anchor = TOPIC_ANCHORS[topic]
-        icon_tag = f'<span aria-hidden="true">{TOPIC_ICONS[topic]} </span>' if topic in TOPIC_ICONS else ""
+        # Optimization: Use pre-calculated icon tags
+        icon_tag = TOPIC_ICON_TAGS.get(topic, "")
         index_bar_parts.append(
             f'<li style="display:inline-block;margin:0;">'
             f'<a href="#{anchor}" aria-label="Jump to {safe_name} section - {count} articles" '
@@ -359,7 +369,8 @@ def render_html(grouped, category_angles):
             <ul style="margin:8px 0 0 0;padding-left:18px;">{bullets}</ul>
           </div>"""
 
-        icon_tag = f'<span aria-hidden="true">{TOPIC_ICONS[topic]} </span>' if topic in TOPIC_ICONS else ""
+        # Optimization: Use pre-calculated icon tags
+        icon_tag = TOPIC_ICON_TAGS.get(topic, "")
         sections_parts.append(f"""
         <section id="{anchor}" aria-labelledby="{header_id}" style="margin-bottom:36px;">
           <h2 id="{header_id}" style="margin:0 0 16px 0;padding:12px 20px;background:{color};
