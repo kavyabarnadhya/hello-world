@@ -13,3 +13,7 @@
 ## 2026-05-15 - [Pre-calculating static joined strings and sets]
 **Learning:** Inline operations like `", ".join(sorted(TOPIC_COLORS.keys()))` inside an LLM prompt construction or `set(FEEDS.values())` inside a loop are redundant if the underlying data is static. Moving these to module-level constants improves performance by avoiding repeated allocations and computations.
 **Action:** Identify loop-invariant or static-data-dependent strings/sets and pre-calculate them at the module level.
+
+## 2026-05-18 - [Optimization Trap: Overlapping Pattern Replacement]
+**Learning:** Replacing regex with iterative `str.replace()` for overlapping patterns (e.g., 'GS-I' and 'GS-II') or when the replacement contains the search pattern is unsafe. It can cause duplicate bolding or corrupt existing HTML tags (e.g., matching 'GS-I' inside '<strong>GS-II</strong>').
+**Action:** Use `re.sub` for correct token matching when dealing with overlapping patterns or HTML injection.
