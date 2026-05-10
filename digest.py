@@ -109,6 +109,17 @@ TOPIC_COLORS = {
     "Science & Technology": "#2c3e50",
 }
 
+TOPIC_ICONS = {
+    "International Relations": "🌍",
+    "Economy": "📈",
+    "Polity & Governance": "🏛️",
+    "Security & Defence": "🛡️",
+    "History & Culture": "📜",
+    "Environment & Ecology": "🌱",
+    "Social Issues": "🤝",
+    "Science & Technology": "🔬",
+}
+
 # Optimization: Pre-calculate sorted topic list string for the LLM prompt
 TOPIC_LIST_STR = ", ".join(sorted(TOPIC_COLORS.keys()))
 
@@ -271,12 +282,13 @@ def render_html(grouped, category_angles):
         count = len(grouped[topic])
         safe_name = SAFE_TOPIC_NAMES[topic]
         anchor = TOPIC_ANCHORS[topic]
+        icon_tag = f'<span aria-hidden="true">{TOPIC_ICONS[topic]} </span>' if topic in TOPIC_ICONS else ""
         index_bar_parts.append(
             f'<li style="display:inline-block;margin:0;">'
             f'<a href="#{anchor}" aria-label="Jump to {safe_name} section - {count} articles" '
             f'style="display:inline-block;margin:4px;padding:6px 14px;'
             f'background:{color};color:#fff;border-radius:20px;text-decoration:none;'
-            f'font-size:13px;font-weight:600;">{safe_name} ({count})</a>'
+            f'font-size:13px;font-weight:600;">{icon_tag}{safe_name} ({count})</a>'
             f'</li>'
         )
     index_bar_items = f'<ul style="list-style:none;padding:0;margin:0;">{"".join(index_bar_parts)}</ul>'
@@ -308,8 +320,8 @@ def render_html(grouped, category_angles):
             safe_link = html.escape(str(link), quote=True)
 
             cards_parts.append(f"""
-            <article style="background:#fff;border:1px solid #e0e0e0;border-radius:8px;
-                        padding:18px 20px;margin-bottom:16px;display:block;">
+            <article style="background:#fff;border:1px solid #e0e0e0;border-left:4px solid {color};
+                        border-radius:8px;padding:18px 20px;margin-bottom:16px;display:block;">
               <h3 style="margin:0 0 8px 0;font-size:17px;font-weight:700;">
                 <a href="{safe_link}" style="color:#1a1a1a;text-decoration:none;">{safe_title}</a>
               </h3>
@@ -347,11 +359,12 @@ def render_html(grouped, category_angles):
             <ul style="margin:8px 0 0 0;padding-left:18px;">{bullets}</ul>
           </div>"""
 
+        icon_tag = f'<span aria-hidden="true">{TOPIC_ICONS[topic]} </span>' if topic in TOPIC_ICONS else ""
         sections_parts.append(f"""
         <section id="{anchor}" aria-labelledby="{header_id}" style="margin-bottom:36px;">
           <h2 id="{header_id}" style="margin:0 0 16px 0;padding:12px 20px;background:{color};
                      color:#fff;border-radius:6px;font-size:18px;font-weight:700;">
-            {SAFE_TOPIC_NAMES[topic]}
+            {icon_tag}{SAFE_TOPIC_NAMES[topic]}
           </h2>
           {angles_html}
           {cards_html}
@@ -372,6 +385,7 @@ def render_html(grouped, category_angles):
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>UPSC News Digest – {today}</title>
   <style>
+    a:hover {{ text-decoration: underline !important; }}
     .skip-link:focus {{
       position: static !important;
       width: auto !important;
