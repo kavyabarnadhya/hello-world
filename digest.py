@@ -300,14 +300,14 @@ def render_html(grouped, category_angles):
         # Optimization: Use pre-calculated icon tags
         icon_tag = TOPIC_ICON_TAGS.get(topic, "")
         index_bar_parts.append(
-            f'<li style="display:inline-block;margin:0;">'
+            f'<li role="listitem" style="display:inline-block;margin:0;">'
             f'<a href="#{anchor}" aria-label="Jump to {safe_name} section - {count} articles" '
             f'style="display:inline-block;margin:4px;padding:6px 14px;'
             f'background:{color};color:#fff;border-radius:20px;text-decoration:none;'
             f'font-size:13px;font-weight:600;">{icon_tag}{safe_name} ({count})</a>'
             f'</li>'
         )
-    index_bar_items = f'<ul style="list-style:none;padding:0;margin:0;">{"".join(index_bar_parts)}</ul>'
+    index_bar_items = f'<ul role="list" style="list-style:none;padding:0;margin:0;">{"".join(index_bar_parts)}</ul>'
 
     # Article sections
     sections_parts = []
@@ -433,7 +433,11 @@ def render_html(grouped, category_angles):
       <h1 style="color:#fff;margin:0 0 6px 0;font-size:26px;font-weight:700;">
         UPSC News Digest
       </h1>
-      <p style="color:#aaa;margin:0;font-size:14px;">{today} &bull; {total_articles} articles &bull; {reading_time} min read</p>
+      <p style="color:#aaa;margin:0;font-size:14px;">
+        <span aria-hidden="true">📅 </span>{today} <span aria-hidden="true">&bull;</span>
+        <span aria-hidden="true">📰 </span>{total_articles} articles <span aria-hidden="true">&bull;</span>
+        <span aria-hidden="true">⏱️ </span>{reading_time} min read
+      </p>
     </div>
 
     <!-- Topic Index Bar -->
@@ -451,7 +455,7 @@ def render_html(grouped, category_angles):
 
     <!-- Footer -->
     <div style="text-align:center;padding:20px;color:#5e5e5e;font-size:12px;">
-      Generated automatically by UPSC News Digest &bull; Powered by Llama 3.3 via Groq
+      Generated automatically by UPSC News Digest <span aria-hidden="true">&bull;</span> Powered by Llama 3.3 via Groq
     </div>
   </div>
 </body>
