@@ -28,6 +28,17 @@ GS_RE = re.compile(r"(GS-[IVX]+)")
 GS_BOLD = r"<strong>\1</strong>"
 
 
+def bold_gs(text):
+    """
+    Performance Optimization: Fast path for bolding GS paper references.
+    Regex substitution is only applied if the marker 'GS-' is present in the text,
+    significantly reducing CPU cycles for articles/angles without GS references.
+    """
+    if "GS-" in text:
+        return GS_RE.sub(GS_BOLD, text)
+    return text
+
+
 def clean_text(text):
     """
     Performance Optimization: Strips HTML tags and unescapes entities from RSS summaries
@@ -325,7 +336,7 @@ def render_html(grouped, category_angles):
             safe_source = html.escape(a.get("source", ""))
             safe_summary = html.escape(a.get("summary", ""))
             # UX: Bold GS paper references to help UPSC aspirants scan the digest more efficiently
-            safe_summary = GS_RE.sub(GS_BOLD,safe_summary)
+            safe_summary = bold_gs(safe_summary)
 
             # Simple URL validation: only allow http(s) protocols
             # Security: Validation must be case-insensitive to effectively block javascript: URIs
@@ -362,7 +373,7 @@ def render_html(grouped, category_angles):
             # UX: Bold GS paper references to help UPSC aspirants scan the digest more efficiently
             bullets = "".join(
                 f'<li style="margin:4px 0;color:#78350f;font-size:13px;line-height:1.5;">'
-                f'{GS_RE.sub(GS_BOLD,html.escape(str(b)))}</li>'
+                f'{bold_gs(html.escape(str(b)))}</li>'
                 for b in angles
             )
             angles_html = f"""
