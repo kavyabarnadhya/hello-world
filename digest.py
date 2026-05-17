@@ -246,9 +246,14 @@ Articles:
         classified = data.get("articles")
         if not isinstance(classified, list):
             raise ValueError("LLM 'articles' is not a list")
-        category_angles = data.get("category_angles")
-        if not isinstance(category_angles, dict):
-            category_angles = {}
+        raw_angles = data.get("category_angles")
+        category_angles = {}
+        if isinstance(raw_angles, dict):
+            # Security: Sanitize and limit the number of category angles to prevent DoS
+            for topic, angles in raw_angles.items():
+                if isinstance(angles, list):
+                    # Limit to 5 bullets, each max 300 chars
+                    category_angles[str(topic)] = [str(b)[:300] for b in angles[:5]]
     except Exception as e:
         print(f"ERROR in Groq classification: {e}")
         return [], {}
@@ -266,13 +271,14 @@ Articles:
         if not isinstance(idx, int) or idx < 0 or idx >= len(articles):
             continue
         original = articles[idx]
-        # Security: Defensive conversion to string before being used in HTML rendering
+        # Security: Defensive conversion to string and truncation before being used in HTML rendering
+        # Limit summary to 1000 chars to prevent DoS via extremely large email payloads.
         result.append({
             "title": original["title"],
             "link": original["link"],
             "source": original["source"],
             "topic": topic,
-            "summary": str(item.get("summary", "")),
+            "summary": str(item.get("summary", ""))[:1000],
         })
     return result, category_angles
 
@@ -459,9 +465,15 @@ def validate_env():
     and follow basic format expectations before starting the process.
     """
     required = ["SENDER_EMAIL", "SENDER_APP_PASSWORD", "RECEIVER_EMAIL", "GROQ_API_KEY"]
-    missing = [var for var in required if not os.getenv(var) or not str(os.getenv(var)).strip()]
-    if missing:
-        raise ValueError(f"Missing required environment variables: {', '.join(missing)}")
+    for var in required:
+        val = str(os.getenv(var, "")).strip()
+        if not val:
+            raise ValueError(f"Missing required environment variable: {var}")
+
+        # Security: Prevent usage of placeholder values from .env.example or common patterns
+        low_val = val.lower()
+        if any(p in low_val for p in ["your_", "example.com", "placeholder", "recipient1@"]):
+            raise ValueError(f"Environment variable {var} appears to contain a placeholder value.")
 
     # Basic email format validation for sender and receiver
     email_regex = re.compile(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$")
@@ -497,7 +509,8 @@ def send_email(html_body):
     msg["From"] = sender
     msg["To"] = ", ".join(receivers)
 
-    msg.attach(MIMEText(html_body, "html"))
+    # Security: Explicitly set charset to UTF-8 for consistent rendering and security
+    msg.attach(MIMEText(html_body, "html", _charset="utf-8"))
 
     context = ssl.create_default_context()
     # Security: Set explicit timeout to prevent hanging on slow connections
@@ -551,7 +564,8 @@ if __name__ == "__main__":
         with ThreadPoolExecutor(max_workers=10) as executor:
             futures = []
             for url in expansion_urls_to_fetch:
-                source_name = url.split("/")[2]  # e.g. thewire.in
+                # Security: Truncate source name to prevent extremely long identifiers
+                source_name = url.split("/")[2][:50]  # e.g. thewire.in
                 futures.append(executor.submit(fetch_from_feed, url, source_name, limit=3))
             for future in futures:
                 expansion_articles.extend(future.result())
