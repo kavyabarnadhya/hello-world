@@ -1,5 +1,12 @@
 # UPSC News Digest
 
+[![Python](https://img.shields.io/badge/Python-3.x-3776AB?style=flat&logo=python)](https://python.org)
+[![Groq](https://img.shields.io/badge/LLM-Llama_3.3_70B-FF6B00?style=flat)](https://groq.com)
+[![GitHub Actions](https://img.shields.io/badge/Runs_on-GitHub_Actions-2088FF?style=flat&logo=githubactions)](https://github.com/kavyabarnadhya/upsc-news-digest/actions)
+[![License](https://img.shields.io/badge/License-Proprietary-red?style=flat)](LICENSE)
+
+Built this because manually sifting through 5+ news sites every morning for exam-relevant content was taking 45 minutes. Now it takes 0.
+
 A Python script that fetches news from 7 India-focused sources, filters and summarizes UPSC-relevant articles using **Llama 3.3 70B via Groq**, and sends a beautifully formatted HTML email digest to your inbox every morning at 8:00 AM IST.
 
 ## What it does
