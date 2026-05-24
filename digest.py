@@ -316,10 +316,10 @@ def render_html(grouped, category_angles):
         icon_tag = TOPIC_ICON_TAGS.get(topic, "")
         index_bar_parts.append(
             f'<li role="listitem" style="display:inline-block;margin:0;">'
-            f'<a href="#{anchor}" aria-label="Jump to {safe_name} section - {count} articles" '
+            f'<a href="#{anchor}" class="topic-pill" aria-label="Jump to {safe_name} section - {count} articles" '
             f'style="display:inline-block;margin:4px;padding:6px 14px;'
             f'background:{color};color:#fff;border-radius:20px;text-decoration:none;'
-            f'font-size:13px;font-weight:600;">{icon_tag}{safe_name} ({count})</a>'
+            f'font-size:13px;font-weight:600;transition:transform 0.2s, filter 0.2s;">{icon_tag}{safe_name} ({count})</a>'
             f'</li>'
         )
     index_bar_items = f'<ul role="list" style="list-style:none;padding:0;margin:0;">{"".join(index_bar_parts)}</ul>'
@@ -365,7 +365,7 @@ def render_html(grouped, category_angles):
               </p>
               <a href="{safe_link}" aria-label="Read full article: {safe_title}"
                  style="color:{color};font-size:13px;font-weight:600;
-                 text-decoration:none;">Read full article <span aria-hidden="true">&rarr;</span></a>
+                 text-decoration:none;">Read full article&nbsp;<span aria-hidden="true">&rarr;</span></a>
             </article>""")
         cards_html = "".join(cards_parts)
 
@@ -401,7 +401,7 @@ def render_html(grouped, category_angles):
           {angles_html}
           {cards_html}
           <div style="text-align:right;">
-            <a href="#top" aria-label="Back to topic index" style="color:#666;font-size:12px;text-decoration:none;"><span aria-hidden="true">&uarr;</span> Back to top</a>
+            <a href="#top" aria-label="Back to topic index" style="color:#666;font-size:12px;text-decoration:none;">Back to top&nbsp;<span aria-hidden="true">&uarr;</span></a>
           </div>
         </section>""")
 
@@ -415,9 +415,14 @@ def render_html(grouped, category_angles):
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>UPSC News Digest – {today}</title>
+  <title>📰 UPSC News Digest – {today}</title>
   <style>
+    html {{ scroll-behavior: smooth; }}
     a:hover {{ text-decoration: underline !important; }}
+    .topic-pill:hover, .topic-pill:focus-visible {{
+      transform: translateY(-1px) !important;
+      filter: brightness(110%) !important;
+    }}
     .skip-link:focus {{
       position: static !important;
       width: auto !important;
@@ -456,10 +461,10 @@ def render_html(grouped, category_angles):
     </div>
 
     <!-- Topic Index Bar -->
-    <nav aria-label="Topic index" style="background:#fff;border:1px solid #e0e0e0;border-radius:8px;
+    <nav aria-labelledby="topic-index-header" style="background:#fff;border:1px solid #e0e0e0;border-radius:8px;
                 padding:16px 20px;margin-bottom:28px;">
-      <p style="margin:0 0 10px 0;font-size:13px;font-weight:700;color:#555;
-                text-transform:uppercase;letter-spacing:0.5px;">Topics in this digest</p>
+      <h2 id="topic-index-header" style="margin:0 0 10px 0;font-size:13px;font-weight:700;color:#555;
+                text-transform:uppercase;letter-spacing:0.5px;">Topics in this digest</h2>
       <div>{index_bar_items}</div>
     </nav>
 
