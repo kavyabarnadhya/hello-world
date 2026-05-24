@@ -193,6 +193,7 @@ def fetch_from_feed(url, source_name, limit=3):
 
 
 def fetch_articles():
+    """Fetch articles from all main feeds and deduplicate by URL."""
     articles = []
     with ThreadPoolExecutor(max_workers=len(FEEDS)) as executor:
         futures = []
@@ -201,8 +202,14 @@ def fetch_articles():
             # so they don't crowd out other categories. General sources get 5.
             limit = 3 if source in SPECIALIST_SOURCES else 5
             futures.append(executor.submit(fetch_from_feed, url, source, limit))
+
+        seen_links = set()
         for future in futures:
-            articles.extend(future.result())
+            for article in future.result():
+                link = article.get("link")
+                if link and link not in seen_links:
+                    articles.append(article)
+                    seen_links.add(link)
     return articles
 
 
@@ -557,6 +564,8 @@ if __name__ == "__main__":
     print("\n[1/4] Fetching articles from RSS feeds...")
     try:
         articles = fetch_articles()
+        # Track unique links to avoid duplicates in expansion pass
+        seen_links = {a["link"] for a in articles}
         print(f"  Total fetched: {len(articles)} articles")
     except Exception as e:
         print(f"FATAL: Could not fetch articles: {e}")
@@ -592,7 +601,11 @@ if __name__ == "__main__":
                 source_name = url.split("/")[2][:50]  # e.g. thewire.in
                 futures.append(executor.submit(fetch_from_feed, url, source_name, limit=3))
             for future in futures:
-                expansion_articles.extend(future.result())
+                for article in future.result():
+                    link = article.get("link")
+                    if link and link not in seen_links:
+                        expansion_articles.append(article)
+                        seen_links.add(link)
 
         if expansion_articles:
             print(f"  Classifying {len(expansion_articles)} expansion articles...")

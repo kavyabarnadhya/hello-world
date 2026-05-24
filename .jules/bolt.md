@@ -17,3 +17,11 @@
 ## 2026-05-18 - [Optimization Trap: Overlapping Pattern Replacement]
 **Learning:** Replacing regex with iterative `str.replace()` for overlapping patterns (e.g., 'GS-I' and 'GS-II') or when the replacement contains the search pattern is unsafe. It can cause duplicate bolding or corrupt existing HTML tags (e.g., matching 'GS-I' inside '<strong>GS-II</strong>').
 **Action:** Use `re.sub` for correct token matching when dealing with overlapping patterns or HTML injection.
+
+## 2026-06-12 - [Article Deduplication across multi-source feeds]
+**Learning:** In applications aggregating news from multiple overlapping sources, the same article often appears in different feeds. Deduplicating these by URL () before LLM processing significantly reduces token costs and classification overhead.
+**Action:** Implement a `seen_links` set during article collection phases (main and expansion) to filter out redundant content before it reaches the LLM or final rendering.
+
+## 2026-06-12 - [Article Deduplication across multi-source feeds]
+**Learning:** In applications aggregating news from multiple overlapping sources, the same article often appears in different feeds. Deduplicating these by URL (`link`) before LLM processing significantly reduces token costs and classification overhead.
+**Action:** Implement a `seen_links` set during article collection phases (main and expansion) to filter out redundant content before it reaches the LLM or final rendering.
