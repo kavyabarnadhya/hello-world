@@ -166,6 +166,10 @@ TOPIC_ORDER = [
 
 def fetch_from_feed(url, source_name, limit=3):
     """Fetch up to `limit` articles from a single RSS feed URL."""
+    # Security: Enforce web protocols for all RSS feeds to prevent local file disclosure (LFD)
+    if not isinstance(url, str) or not url.lower().startswith(("http://", "https://")):
+        raise ValueError(f"Secure protocol required: HTTP or HTTPS. Received: {url}")
+
     articles = []
     try:
         feed = feedparser.parse(url)
@@ -496,6 +500,11 @@ def validate_env():
     sender = os.getenv("SENDER_EMAIL", "").strip()
     if not email_regex.match(sender):
         raise ValueError("SENDER_EMAIL does not appear to be a valid email address.")
+
+    # Security: Validate GROQ_API_KEY format (starts with gsk_)
+    groq_key = os.getenv("GROQ_API_KEY", "").strip()
+    if not groq_key.startswith("gsk_"):
+        raise ValueError("GROQ_API_KEY must start with 'gsk_' (standard Groq key prefix).")
 
     receivers = [r.strip() for r in os.getenv("RECEIVER_EMAIL", "").split(",") if r.strip()]
     if not receivers:
