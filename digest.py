@@ -114,10 +114,10 @@ EXPANSION_FEEDS = {
 
 TOPIC_COLORS = {
     "International Relations": "#c0392b",
-    "Economy": "#1e8449",
-    "Polity & Governance": "#2980b9",
+    "Economy": "#196f3d",
+    "Polity & Governance": "#21618c",
     "Security & Defence": "#8e44ad",
-    "History & Culture": "#d35400",
+    "History & Culture": "#a04000",
     "Environment & Ecology": "#117864",
     "Social Issues": "#515a5a",
     "Science & Technology": "#2c3e50",
@@ -153,7 +153,7 @@ SAFE_TOPIC_NAMES = {topic: html.escape(topic) for topic in TOPIC_COLORS}
 # Optimization: Pre-calculate topic headers to save cycles during rendering
 TOPIC_HEADERS = {
     topic: f'<h2 id="header-{TOPIC_ANCHORS[topic]}" style="margin:0 0 16px 0;padding:12px 20px;background:{TOPIC_COLORS[topic]};'
-           f'color:#fff;border-radius:6px;font-size:18px;font-weight:700;">'
+           f'color:#fff;border-radius:6px;font-size:18px;font-weight:700;letter-spacing:0.5px;">'
            f'{TOPIC_ICON_TAGS.get(topic, "")}{SAFE_TOPIC_NAMES[topic]}</h2>'
     for topic in TOPIC_COLORS
 }

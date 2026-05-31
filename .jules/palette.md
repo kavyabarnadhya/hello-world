@@ -17,3 +17,7 @@
 ## 2025-05-18 - [Email-Safe Accessibility Controls]
 **Learning:** For email accessibility features like "Skip to Content" links, avoid JavaScript handlers (`onfocus`) as most email clients strip them. A `<style>` block using `:focus` classes is more robust, though still not supported by all clients (e.g., Gmail on mobile). Always provide descriptive `aria-label` attributes for navigational links even if they contain text, as it provides clearer intent for screen reader users (e.g., "Jump to section" vs just "Economy").
 **Action:** Prioritize CSS-based focus states over JavaScript for email interactivity and use descriptive ARIA labels to clarify navigational intent.
+
+## 2025-05-19 - [Accessible Contrast for Themed Section Headers]
+**Learning:** Themed section headers using background colors with white text must be carefully selected to meet WCAG AA contrast ratios (4.5:1). Darker, more saturated versions of brand colors (e.g., #196f3d for green, #21618c for blue, #a04000 for orange) ensure readability without sacrificing the visual identity of the sections.
+**Action:** Always verify contrast ratios for any new color tokens added to the TOPIC_COLORS mapping and prefer darkened shades for backgrounds that host light text.
