@@ -150,6 +150,36 @@ TOPIC_ANCHORS = {
 }
 SAFE_TOPIC_NAMES = {topic: html.escape(topic) for topic in TOPIC_COLORS}
 
+# Optimization: Pre-calculate topic headers to save cycles during rendering
+TOPIC_HEADERS = {
+    topic: f'<h2 id="header-{TOPIC_ANCHORS[topic]}" style="margin:0 0 16px 0;padding:12px 20px;background:{TOPIC_COLORS[topic]};'
+           f'color:#fff;border-radius:6px;font-size:18px;font-weight:700;">'
+           f'{TOPIC_ICON_TAGS.get(topic, "")}{SAFE_TOPIC_NAMES[topic]}</h2>'
+    for topic in TOPIC_COLORS
+}
+
+# Optimization: Pre-calculate reusable HTML and CSS fragments
+BACK_TO_TOP_HTML = (
+    '<div style="text-align:right;"><a href="#top" aria-label="Back to topic index" '
+    'style="color:#666;font-size:12px;text-decoration:none;">Back to top&nbsp;'
+    '<span aria-hidden="true">&uarr;</span></a></div>'
+)
+
+PILL_STYLE_BASE = (
+    'display:inline-block;margin:4px;padding:6px 14px;color:#fff;border-radius:20px;'
+    'text-decoration:none;font-size:13px;font-weight:600;transition:transform 0.2s, filter 0.2s;'
+)
+
+ARTICLE_CARD_STYLE_BASE = (
+    'background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:18px 20px;'
+    'margin-bottom:16px;display:block;'
+)
+
+UPSC_ANGLES_BOX_STYLE = (
+    'background:#fefce8;border-left:4px solid #f59e0b;padding:12px 16px;'
+    'border-radius:4px;margin-bottom:20px;'
+)
+
 VALID_TOPICS = set(TOPIC_COLORS.keys()) | {"Not UPSC Relevant"}
 
 TOPIC_ORDER = [
@@ -306,60 +336,48 @@ Articles:
 
 
 def render_html(grouped, category_angles):
+    """
+    Performance Optimization: Refactored to a single pass over topics,
+    using pre-calculated HTML/CSS constants to reduce overhead.
+    """
     today = datetime.now().strftime("%A, %B %d, %Y")
-    topics_present = list(grouped.keys())
     total_articles = sum(len(articles) for articles in grouped.values())
     reading_time = max(1, round(total_articles * 0.75))
 
-    # Topic index bar
     index_bar_parts = []
-    for topic in topics_present:
-        # Optimization: Use direct dictionary lookups for pre-calculated values
+    sections_parts = []
+
+    for topic, articles in grouped.items():
+        # Optimization: Use direct lookups for pre-calculated values
         color = TOPIC_COLORS[topic]
-        count = len(grouped[topic])
-        safe_name = SAFE_TOPIC_NAMES[topic]
         anchor = TOPIC_ANCHORS[topic]
-        # Optimization: Use pre-calculated icon tags
+        safe_name = SAFE_TOPIC_NAMES[topic]
+        count = len(articles)
         icon_tag = TOPIC_ICON_TAGS.get(topic, "")
+
+        # 1. Build Index Bar Item
         index_bar_parts.append(
             f'<li role="listitem" style="display:inline-block;margin:0;">'
             f'<a href="#{anchor}" class="topic-pill" aria-label="Jump to {safe_name} section - {count} articles" '
-            f'style="display:inline-block;margin:4px;padding:6px 14px;'
-            f'background:{color};color:#fff;border-radius:20px;text-decoration:none;'
-            f'font-size:13px;font-weight:600;transition:transform 0.2s, filter 0.2s;">{icon_tag}{safe_name} ({count})</a>'
+            f'style="{PILL_STYLE_BASE}background:{color};">{icon_tag}{safe_name} ({count})</a>'
             f'</li>'
         )
-    index_bar_items = f'<ul role="list" style="list-style:none;padding:0;margin:0;">{"".join(index_bar_parts)}</ul>'
 
-    # Article sections
-    sections_parts = []
-    for topic in topics_present:
-        # Optimization: Use direct lookups; guaranteed safe for topics in TOPIC_ORDER
-        color = TOPIC_COLORS[topic]
-        anchor = TOPIC_ANCHORS[topic]
-        header_id = f"header-{anchor}"
-        articles = grouped[topic]
-
+        # 2. Build Article Cards
         cards_parts = []
         for a in articles:
-            # Escape content to prevent XSS
             safe_title = html.escape(a.get("title", ""))
             safe_source = html.escape(a.get("source", ""))
-            safe_summary = html.escape(a.get("summary", ""))
-            # UX: Bold GS paper references to help UPSC aspirants scan the digest more efficiently
-            safe_summary = bold_gs(safe_summary)
+            # UX: Bold GS paper references to help UPSC aspirants scan efficiently
+            safe_summary = bold_gs(html.escape(a.get("summary", "")))
 
-            # Simple URL validation: only allow http(s) protocols
-            # Security: Validation must be case-insensitive to effectively block javascript: URIs
             link = a.get("link", "")
             if not isinstance(link, str) or not link.lower().startswith(("http://", "https://")):
                 link = "#"
-            # Escape link to prevent attribute injection
             safe_link = html.escape(str(link), quote=True)
 
             cards_parts.append(f"""
-            <article style="background:#fff;border:1px solid #e0e0e0;border-left:4px solid {color};
-                        border-radius:8px;padding:18px 20px;margin-bottom:16px;display:block;">
+            <article style="{ARTICLE_CARD_STYLE_BASE}border-left:4px solid {color};">
               <h3 style="margin:0 0 8px 0;font-size:17px;font-weight:700;">
                 <a href="{safe_link}" style="color:#1a1a1a;text-decoration:none;">{safe_title}</a>
               </h3>
@@ -374,22 +392,18 @@ def render_html(grouped, category_angles):
                  style="color:{color};font-size:13px;font-weight:600;
                  text-decoration:none;">Read full article&nbsp;<span aria-hidden="true">&rarr;</span></a>
             </article>""")
-        cards_html = "".join(cards_parts)
 
+        # 3. Build UPSC Angles
         angles = category_angles.get(topic, [])
         angles_html = ""
-        # Security: Ensure angles is a list to prevent iterating over characters if AI returns a string
         if isinstance(angles, list) and angles:
-            # Security: Defensive string conversion to prevent crashes on non-string AI output
-            # UX: Bold GS paper references to help UPSC aspirants scan the digest more efficiently
             bullets = "".join(
                 f'<li style="margin:4px 0;color:#78350f;font-size:13px;line-height:1.5;">'
                 f'{bold_gs(html.escape(str(b)))}</li>'
                 for b in angles
             )
             angles_html = f"""
-          <div style="background:#fefce8;border-left:4px solid #f59e0b;
-                      padding:12px 16px;border-radius:4px;margin-bottom:20px;">
+          <div style="{UPSC_ANGLES_BOX_STYLE}">
             <h3 style="margin:0;display:inline;font-size:12px;font-weight:700;color:#b45309;
                          text-transform:uppercase;letter-spacing:0.5px;">
               <span aria-hidden="true">🎓</span> UPSC Exam Angles
@@ -397,25 +411,20 @@ def render_html(grouped, category_angles):
             <ul style="margin:8px 0 0 0;padding-left:18px;">{bullets}</ul>
           </div>"""
 
-        # Optimization: Use pre-calculated icon tags
-        icon_tag = TOPIC_ICON_TAGS.get(topic, "")
+        # 4. Assemble Section
         sections_parts.append(f"""
-        <section id="{anchor}" aria-labelledby="{header_id}" style="margin-bottom:36px;">
-          <h2 id="{header_id}" style="margin:0 0 16px 0;padding:12px 20px;background:{color};
-                     color:#fff;border-radius:6px;font-size:18px;font-weight:700;">
-            {icon_tag}{SAFE_TOPIC_NAMES[topic]}
-          </h2>
+        <section id="{anchor}" aria-labelledby="header-{anchor}" style="margin-bottom:36px;">
+          {TOPIC_HEADERS[topic]}
           {angles_html}
-          {cards_html}
-          <div style="text-align:right;">
-            <a href="#top" aria-label="Back to topic index" style="color:#666;font-size:12px;text-decoration:none;">Back to top&nbsp;<span aria-hidden="true">&uarr;</span></a>
-          </div>
+          {"".join(cards_parts)}
+          {BACK_TO_TOP_HTML}
         </section>""")
 
+    index_bar_items = f'<ul role="list" style="list-style:none;padding:0;margin:0;">{"".join(index_bar_parts)}</ul>'
     sections_html = "".join(sections_parts)
 
     # Preheader text for better inbox preview
-    preheader_text = f"Today's UPSC Digest: {total_articles} curated articles across {len(topics_present)} topics. Reading time: {reading_time} min."
+    preheader_text = f"Today's UPSC Digest: {total_articles} curated articles across {len(grouped)} topics. Reading time: {reading_time} min."
 
     full_html = f"""<!DOCTYPE html>
 <html lang="en">
@@ -544,6 +553,9 @@ def send_email(html_body):
 
     today = datetime.now().strftime("%B %d, %Y")
     context = ssl.create_default_context()
+    # Optimization: Pre-calculate the MIMEText part once to save re-encoding/allocation for multiple recipients
+    html_part = MIMEText(html_body, "html", _charset="utf-8")
+
     # Security: Set explicit timeout to prevent hanging on slow connections
     with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context, timeout=30) as server:
         server.login(sender, password)
@@ -557,7 +569,7 @@ def send_email(html_body):
             msg["To"] = recipient
 
             # Security: Explicitly set charset to UTF-8 for consistent rendering and security
-            msg.attach(MIMEText(html_body, "html", _charset="utf-8"))
+            msg.attach(html_part)
             server.sendmail(sender, [recipient], msg.as_string())
 
     # Security: Mask recipient emails in logs to protect PII
