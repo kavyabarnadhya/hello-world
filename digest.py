@@ -535,24 +535,31 @@ def send_email(html_body):
     password = os.getenv("SENDER_APP_PASSWORD")
     receiver_raw = os.getenv("RECEIVER_EMAIL")
 
-    # Support comma-separated list of recipients.
+    # Support comma-separated list of recipients and deduplicate to prevent redundant sends.
     # Security: Strip newline characters to prevent email header injection.
-    receivers = [r.strip().replace("\r", "").replace("\n", "") for r in receiver_raw.split(",") if r.strip()]
+    receivers = sorted(set(
+        r.strip().replace("\r", "").replace("\n", "")
+        for r in receiver_raw.split(",") if r.strip()
+    ))
 
     today = datetime.now().strftime("%B %d, %Y")
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = f"UPSC News Digest – {today}"
-    msg["From"] = sender
-    msg["To"] = ", ".join(receivers)
-
-    # Security: Explicitly set charset to UTF-8 for consistent rendering and security
-    msg.attach(MIMEText(html_body, "html", _charset="utf-8"))
-
     context = ssl.create_default_context()
     # Security: Set explicit timeout to prevent hanging on slow connections
     with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context, timeout=30) as server:
         server.login(sender, password)
-        server.sendmail(sender, receivers, msg.as_string())
+
+        # Security: Iterate through recipients and send individual emails to protect PII.
+        # This prevents recipients from seeing each other's email addresses in the 'To' header.
+        for recipient in receivers:
+            msg = MIMEMultipart("alternative")
+            msg["Subject"] = f"UPSC News Digest – {today}"
+            msg["From"] = sender
+            msg["To"] = recipient
+
+            # Security: Explicitly set charset to UTF-8 for consistent rendering and security
+            msg.attach(MIMEText(html_body, "html", _charset="utf-8"))
+            server.sendmail(sender, [recipient], msg.as_string())
+
     # Security: Mask recipient emails in logs to protect PII
     print(f"  Sent to {len(receivers)} recipient(s) successfully")
 
