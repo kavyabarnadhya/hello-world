@@ -114,10 +114,10 @@ EXPANSION_FEEDS = {
 
 TOPIC_COLORS = {
     "International Relations": "#c0392b",
-    "Economy": "#1e8449",
-    "Polity & Governance": "#2980b9",
+    "Economy": "#196f3d",
+    "Polity & Governance": "#21618c",
     "Security & Defence": "#8e44ad",
-    "History & Culture": "#d35400",
+    "History & Culture": "#a04000",
     "Environment & Ecology": "#117864",
     "Social Issues": "#515a5a",
     "Science & Technology": "#2c3e50",
@@ -402,7 +402,8 @@ def render_html(grouped, category_angles):
         sections_parts.append(f"""
         <section id="{anchor}" aria-labelledby="{header_id}" style="margin-bottom:36px;">
           <h2 id="{header_id}" style="margin:0 0 16px 0;padding:12px 20px;background:{color};
-                     color:#fff;border-radius:6px;font-size:18px;font-weight:700;">
+                     color:#fff;border-radius:6px;font-size:18px;font-weight:700;
+                     letter-spacing:0.5px;">
             {icon_tag}{SAFE_TOPIC_NAMES[topic]}
           </h2>
           {angles_html}
