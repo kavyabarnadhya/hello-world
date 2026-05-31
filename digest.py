@@ -440,7 +440,9 @@ def render_html(grouped, category_angles):
       filter: brightness(110%) !important;
     }}
     .skip-link:focus {{
-      position: static !important;
+      position: absolute !important;
+      left: 10px !important;
+      top: 10px !important;
       width: auto !important;
       height: auto !important;
       overflow: visible !important;
