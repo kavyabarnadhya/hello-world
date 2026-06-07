@@ -379,7 +379,7 @@ def render_html(grouped, category_angles):
             safe_link = html.escape(str(link), quote=True)
 
             cards_parts.append(f"""
-            <article style="background:#fff;border:1px solid #e0e0e0;border-left:4px solid {color};
+            <article class="article-card" style="background:#fff;border:1px solid #e0e0e0;border-left:4px solid {color};
                         border-radius:8px;padding:18px 20px;margin-bottom:16px;display:block;">
               <h3 style="margin:0 0 8px 0;font-size:17px;font-weight:700;">
                 <a href="{safe_link}" style="color:#1a1a1a;text-decoration:none;">{safe_title}</a>
@@ -409,7 +409,7 @@ def render_html(grouped, category_angles):
                 for b in angles
             )
             angles_html = f"""
-          <div style="background:#fefce8;border-left:4px solid #f59e0b;
+          <div class="exam-angles" style="background:#fefce8;border-left:4px solid #f59e0b;
                       padding:12px 16px;border-radius:4px;margin-bottom:20px;">
             <h3 style="margin:0;display:inline;font-size:12px;font-weight:700;color:#b45309;
                          text-transform:uppercase;letter-spacing:0.5px;">
@@ -429,7 +429,7 @@ def render_html(grouped, category_angles):
           </h2>
           {angles_html}
           {cards_html}
-          <div style="text-align:right;">
+          <div class="back-to-top" style="text-align:right;">
             <a href="#top" aria-label="Back to topic index" style="color:#666;font-size:12px;text-decoration:none;">Back to top&nbsp;<span aria-hidden="true">&uarr;</span></a>
           </div>
         </section>""")
@@ -462,6 +462,13 @@ def render_html(grouped, category_angles):
       border: 2px solid #1a1a2e;
       z-index: 9999;
     }}
+    @media print {{
+      body {{ background: #fff !important; }}
+      #top {{ max-width: 100% !important; padding: 0 !important; }}
+      .skip-link, .topic-index, .back-to-top {{ display: none !important; }}
+      .article-card, .exam-angles {{ break-inside: avoid; border: 1px solid #eee !important; }}
+      .footer {{ border-top: 1px solid #eee; margin-top: 20px; }}
+    }}
   </style>
 </head>
 <body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;">
@@ -490,7 +497,7 @@ def render_html(grouped, category_angles):
     </div>
 
     <!-- Topic Index Bar -->
-    <nav aria-labelledby="topic-index-header" style="background:#fff;border:1px solid #e0e0e0;border-radius:8px;
+    <nav class="topic-index" aria-labelledby="topic-index-header" style="background:#fff;border:1px solid #e0e0e0;border-radius:8px;
                 padding:16px 20px;margin-bottom:28px;">
       <h2 id="topic-index-header" style="margin:0 0 10px 0;font-size:13px;font-weight:700;color:#555;
                 text-transform:uppercase;letter-spacing:0.5px;">Topics in this digest</h2>
@@ -503,7 +510,7 @@ def render_html(grouped, category_angles):
     </main>
 
     <!-- Footer -->
-    <div style="text-align:center;padding:20px;color:#5e5e5e;font-size:12px;">
+    <div class="footer" style="text-align:center;padding:20px;color:#5e5e5e;font-size:12px;">
       Generated automatically by UPSC News Digest <span aria-hidden="true">&bull;</span> Powered by Llama 3.3 via Groq
     </div>
   </div>

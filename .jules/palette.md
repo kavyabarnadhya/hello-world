@@ -21,3 +21,7 @@
 ## 2025-05-19 - [Accessible Contrast for Themed Section Headers]
 **Learning:** Themed section headers using background colors with white text must be carefully selected to meet WCAG AA contrast ratios (4.5:1). Darker, more saturated versions of brand colors (e.g., #196f3d for green, #21618c for blue, #a04000 for orange) ensure readability without sacrificing the visual identity of the sections.
 **Action:** Always verify contrast ratios for any new color tokens added to the TOPIC_COLORS mapping and prefer darkened shades for backgrounds that host light text.
+
+## 2024-06-07 - [Print-Optimized Styles for Study-Heavy Content]
+**Learning:** For study-oriented content like UPSC digests, users often print materials for offline reading and annotation. Standard email templates with sticky headers, navigation bars, and "back to top" links create significant clutter on paper. A @media print stylesheet that hides these elements and uses 'break-inside: avoid' on article cards ensures a professional, readable, and paper-efficient study guide.
+**Action:** Always include a print-optimized media query for digests or long-form reports, and use semantic classes to target navigational noise.
