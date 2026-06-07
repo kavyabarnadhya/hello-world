@@ -573,6 +573,12 @@ def send_email(html_body):
 
     today = datetime.now().strftime("%B %d, %Y")
     context = ssl.create_default_context()
+
+    # Performance Optimization: Pre-calculate the MIMEText body part once outside the loop
+    # to avoid redundant re-encoding and memory allocation cycles for each recipient.
+    # Security: Explicitly set charset to UTF-8 for consistent rendering and security.
+    body_part = MIMEText(html_body, "html", _charset="utf-8")
+
     # Security: Set explicit timeout to prevent hanging on slow connections
     with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context, timeout=30) as server:
         server.login(sender, password)
@@ -585,8 +591,7 @@ def send_email(html_body):
             msg["From"] = sender
             msg["To"] = recipient
 
-            # Security: Explicitly set charset to UTF-8 for consistent rendering and security
-            msg.attach(MIMEText(html_body, "html", _charset="utf-8"))
+            msg.attach(body_part)
             server.sendmail(sender, [recipient], msg.as_string())
 
     # Security: Mask recipient emails in logs to protect PII
