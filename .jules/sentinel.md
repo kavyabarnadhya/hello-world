@@ -13,3 +13,9 @@
 **Fix:** Implement strict protocol validation to allow only `http://` and `https://`.
 **Learning:** Overly restrictive security (e.g., HTTPS-only) can break existing functionality in applications that rely on external legacy sources. While HTTPS is preferred, mandating it for all external feeds can cause regressions if the provider only supports HTTP.
 **Prevention:** Use an allow-list of safe web protocols (`http`, `https`) rather than a single restrictive one, unless the environment is fully controlled.
+
+## 2026-05-24 - AI-Driven Resource Exhaustion (DoS)
+**Vulnerability:** Resource exhaustion via malformed or malicious LLM output containing duplicate article indices or excessively large JSON structures.
+**Learning:** AI-generated content should be treated as untrusted input. Trusting indices returned by an LLM without deduplication and bounding can lead to unbounded iteration or payload growth.
+**Fix:** Extracted LLM processing into `process_llm_articles()` with strict bounds: capped input iteration at 100, deduplicated indices via a `seen_indices` set, capped final article count at 50, and limited category topics to 20.
+**Prevention:** Always implement hard bounds and deduplication when mapping untrusted identifiers (like indices) back to internal data structures.

@@ -213,6 +213,64 @@ def fetch_articles():
     return articles
 
 
+def process_llm_articles(articles, data):
+    """
+    Security: Refactored logic to process LLM-generated JSON with robust validation,
+    deduplication, and resource limits to prevent Denial of Service (DoS).
+    """
+    if not isinstance(data, dict):
+        return [], {}
+
+    classified = data.get("articles")
+    raw_angles = data.get("category_angles")
+    category_angles = {}
+
+    # Security: Sanitize and limit the number of category angles
+    if isinstance(raw_angles, dict):
+        # Limit to 20 topics maximum to prevent DoS via extremely large JSON objects
+        for i, (topic, angles) in enumerate(raw_angles.items()):
+            if i >= 20:
+                break
+            if isinstance(angles, list):
+                # Limit to 5 bullets per topic, each max 300 chars
+                category_angles[str(topic)] = [str(b)[:300] for b in angles[:5]]
+
+    if not isinstance(classified, list):
+        return [], category_angles
+
+    result = []
+    seen_indices = set()
+    # Security: Limit iteration over LLM-generated articles (cap at 100) to prevent DoS
+    for item in classified[:100]:
+        if not isinstance(item, dict):
+            continue
+        idx = item.get("index")
+        topic = item.get("topic", "")
+        if topic == "Not UPSC Relevant" or topic not in TOPIC_COLORS:
+            continue
+        # Security: Validate index is a non-negative integer within bounds AND not already processed
+        if not isinstance(idx, int) or idx < 0 or idx >= len(articles) or idx in seen_indices:
+            continue
+
+        seen_indices.add(idx)
+        original = articles[idx]
+        # Security: Defensive conversion to string and truncation before being used in HTML rendering
+        # Limit summary to 1000 chars to prevent DoS via extremely large email payloads.
+        result.append({
+            "title": original["title"],
+            "link": original["link"],
+            "source": original["source"],
+            "topic": topic,
+            "summary": str(item.get("summary", ""))[:1000],
+        })
+
+        # Security: Final cap on total articles to keep payload size predictable
+        if len(result) >= 50:
+            break
+
+    return result, category_angles
+
+
 def classify_articles(articles):
     # Security: Limit the number of articles to process to prevent token limit issues and overhead
     articles = articles[:50]
@@ -262,47 +320,10 @@ Articles:
         raw = response.choices[0].message.content.strip()
 
         data = json.loads(raw)
-        # Security: Robustly validate LLM-generated JSON structure
-        if not isinstance(data, dict):
-            raise ValueError("LLM response is not a JSON object")
-        classified = data.get("articles")
-        if not isinstance(classified, list):
-            raise ValueError("LLM 'articles' is not a list")
-        raw_angles = data.get("category_angles")
-        category_angles = {}
-        if isinstance(raw_angles, dict):
-            # Security: Sanitize and limit the number of category angles to prevent DoS
-            for topic, angles in raw_angles.items():
-                if isinstance(angles, list):
-                    # Limit to 5 bullets, each max 300 chars
-                    category_angles[str(topic)] = [str(b)[:300] for b in angles[:5]]
+        return process_llm_articles(articles, data)
     except Exception as e:
         print(f"ERROR in Groq classification: {e}")
         return [], {}
-
-    # Merge original article data back using index
-    result = []
-    for item in classified:
-        if not isinstance(item, dict):
-            continue
-        idx = item.get("index")
-        topic = item.get("topic", "")
-        if topic == "Not UPSC Relevant" or topic not in TOPIC_COLORS:
-            continue
-        # Security: Validate index is a non-negative integer within bounds
-        if not isinstance(idx, int) or idx < 0 or idx >= len(articles):
-            continue
-        original = articles[idx]
-        # Security: Defensive conversion to string and truncation before being used in HTML rendering
-        # Limit summary to 1000 chars to prevent DoS via extremely large email payloads.
-        result.append({
-            "title": original["title"],
-            "link": original["link"],
-            "source": original["source"],
-            "topic": topic,
-            "summary": str(item.get("summary", ""))[:1000],
-        })
-    return result, category_angles
 
 
 def render_html(grouped, category_angles):
