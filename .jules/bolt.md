@@ -25,3 +25,7 @@
 ## 2026-06-12 - [Article Deduplication across multi-source feeds]
 **Learning:** In applications aggregating news from multiple overlapping sources, the same article often appears in different feeds. Deduplicating these by URL (`link`) before LLM processing significantly reduces token costs and classification overhead.
 **Action:** Implement a `seen_links` set during article collection phases (main and expansion) to filter out redundant content before it reaches the LLM or final rendering.
+
+## 2026-06-13 - [Pre-calculating MIMEText body in email loops]
+**Learning:** When sending individual emails to a large recipient list, re-creating the `MIMEText` body part inside the loop causes redundant encoding and memory allocations. Pre-calculating this part once and attaching it to each `MIMEMultipart` message provides a measurable speedup in email generation.
+**Action:** Always pre-calculate static or common MIME parts outside of loops when sending bulk or multi-recipient emails.
