@@ -143,6 +143,26 @@ TOPIC_ICON_TAGS = {
 # Optimization: Pre-calculate sorted topic list string for the LLM prompt
 TOPIC_LIST_STR = ", ".join(sorted(TOPIC_COLORS.keys()))
 
+# Optimization: Pre-calculate the static LLM system prompt to avoid redundant construction
+SYSTEM_PROMPT = f"""You are a UPSC exam preparation assistant focused on the Indian Civil Services Examination.
+
+**Priority:** Strongly prefer articles with a direct India angle — Indian polity, governance, legislation, constitutional matters, Indian economy, Indian social issues, Indian environment policy, Indian science initiatives, India's defence, or Indian history and culture.
+
+**International news:** Include purely international stories only if they are clearly significant for GS-II International Relations — major geopolitical events, major international agreements, or global developments with direct implications for India. Routine foreign news without clear exam relevance should be classified as "Not UPSC Relevant".
+
+**Polity & Governance — classify ONLY if the article covers:** constitutional amendments or provisions, Parliament or state legislature bills or debates, Supreme Court or High Court judgments on constitutional or administrative matters, central or state government schemes and policies, electoral reforms (not campaign coverage), administrative or regulatory changes, federal relations, or lokpal/RTI/accountability mechanisms.
+**Do NOT classify as Polity & Governance:** party political statements, opposition rhetoric, electoral campaign news, political rallies, intra-party matters, or opinion pieces on politics without a substantive constitutional or policy dimension — these are "Not UPSC Relevant" unless they fit another topic such as Economy or Social Issues.
+
+Return ONLY a JSON object (no markdown, no code fences, no explanation) with exactly two keys:
+
+1. "articles": an array of objects for each UPSC-relevant article with:
+   - index: the article index number (int)
+   - topic: one of exactly these topics: {TOPIC_LIST_STR}, Not UPSC Relevant
+   - summary: sharp UPSC-focused summary in 4-5 sentences. Lead with the core decision, judgment, or policy. Then include: (a) the specific constitutional article, act, scheme, or regulatory body involved by name; (b) one or two concrete data points such as numbers, percentages, timelines, or committee names; (c) the GS paper and syllabus topic this maps to (e.g. "GS-II: Parliament and State Legislatures"); (d) the exam-relevant implication or significance. Avoid generic commentary, journalistic opinion, and vague statements like "experts say" or "this is significant".
+   Omit articles that are "Not UPSC Relevant" — do not include them in the array at all.
+
+2. "category_angles": an object mapping each topic that appeared in "articles" to an array of 3-5 bullet strings highlighting the collective UPSC exam relevance of all articles under that topic (mention specific GS papers, syllabus topics, or exam themes where applicable)."""
+
 # Pre-calculate topic anchors and escaped names to save cycles during rendering
 TOPIC_ANCHORS = {
     topic: re.sub(r"[^a-z0-9\-]", "", topic.replace(" ", "-").replace("&", "and").lower())
@@ -289,32 +309,13 @@ def classify_articles(articles):
 
     # Security: Use separate System message for instructions and persona, and User message
     # for untrusted article data to mitigate prompt injection risks.
-    system_prompt = f"""You are a UPSC exam preparation assistant focused on the Indian Civil Services Examination.
-
-**Priority:** Strongly prefer articles with a direct India angle — Indian polity, governance, legislation, constitutional matters, Indian economy, Indian social issues, Indian environment policy, Indian science initiatives, India's defence, or Indian history and culture.
-
-**International news:** Include purely international stories only if they are clearly significant for GS-II International Relations — major geopolitical events, major international agreements, or global developments with direct implications for India. Routine foreign news without clear exam relevance should be classified as "Not UPSC Relevant".
-
-**Polity & Governance — classify ONLY if the article covers:** constitutional amendments or provisions, Parliament or state legislature bills or debates, Supreme Court or High Court judgments on constitutional or administrative matters, central or state government schemes and policies, electoral reforms (not campaign coverage), administrative or regulatory changes, federal relations, or lokpal/RTI/accountability mechanisms.
-**Do NOT classify as Polity & Governance:** party political statements, opposition rhetoric, electoral campaign news, political rallies, intra-party matters, or opinion pieces on politics without a substantive constitutional or policy dimension — these are "Not UPSC Relevant" unless they fit another topic such as Economy or Social Issues.
-
-Return ONLY a JSON object (no markdown, no code fences, no explanation) with exactly two keys:
-
-1. "articles": an array of objects for each UPSC-relevant article with:
-   - index: the article index number (int)
-   - topic: one of exactly these topics: {TOPIC_LIST_STR}, Not UPSC Relevant
-   - summary: sharp UPSC-focused summary in 4-5 sentences. Lead with the core decision, judgment, or policy. Then include: (a) the specific constitutional article, act, scheme, or regulatory body involved by name; (b) one or two concrete data points such as numbers, percentages, timelines, or committee names; (c) the GS paper and syllabus topic this maps to (e.g. "GS-II: Parliament and State Legislatures"); (d) the exam-relevant implication or significance. Avoid generic commentary, journalistic opinion, and vague statements like "experts say" or "this is significant".
-   Omit articles that are "Not UPSC Relevant" — do not include them in the array at all.
-
-2. "category_angles": an object mapping each topic that appeared in "articles" to an array of 3-5 bullet strings highlighting the collective UPSC exam relevance of all articles under that topic (mention specific GS papers, syllabus topics, or exam themes where applicable)."""
-
     user_content = f"Articles to process:\n{articles_text}"
 
     try:
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
-                {"role": "system", "content": system_prompt},
+                {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user_content}
             ],
             temperature=0.2,
@@ -349,9 +350,7 @@ def render_html(grouped, category_angles):
         index_bar_parts.append(
             f'<li role="listitem" style="display:inline-block;margin:0;">'
             f'<a href="#{anchor}" class="topic-pill" aria-label="Jump to {safe_name} section - {count} articles" '
-            f'style="display:inline-block;margin:4px;padding:6px 14px;'
-            f'background:{color};color:#fff;border-radius:20px;text-decoration:none;'
-            f'font-size:13px;font-weight:600;transition:transform 0.2s, filter 0.2s;">{icon_tag}{safe_name} ({count})</a>'
+            f'style="background:{color};">{icon_tag}{safe_name} ({count})</a>'
             f'</li>'
         )
     index_bar_items = f'<ul role="list" style="list-style:none;padding:0;margin:0;">{"".join(index_bar_parts)}</ul>'
@@ -383,21 +382,18 @@ def render_html(grouped, category_angles):
             safe_link = html.escape(str(link), quote=True)
 
             cards_parts.append(f"""
-            <article class="article-card" style="background:#fff;border:1px solid #e0e0e0;border-left:4px solid {color};
-                        border-radius:8px;padding:18px 20px;margin-bottom:16px;display:block;">
-              <h3 style="margin:0 0 8px 0;font-size:17px;font-weight:700;">
-                <a href="{safe_link}" style="color:#1a1a1a;text-decoration:none;">{safe_title}</a>
+            <article class="article-card" style="border-left-color:{color};">
+              <h3 class="article-title">
+                <a href="{safe_link}">{safe_title}</a>
               </h3>
               <div style="margin-bottom:10px;">
-                <span style="background:#f0f0f0;color:#555;font-size:12px;font-weight:600;
-                             padding:3px 9px;border-radius:12px;">{safe_source}</span>
+                <span class="source-badge">{safe_source}</span>
               </div>
-              <p style="color:#444;font-size:14px;line-height:1.6;margin:0 0 12px 0;">
+              <p class="article-summary">
                 {safe_summary}
               </p>
-              <a href="{safe_link}" aria-label="Read full article: {safe_title}"
-                 style="color:{color};font-size:13px;font-weight:600;
-                 text-decoration:none;">Read full article&nbsp;<span aria-hidden="true">&rarr;</span></a>
+              <a href="{safe_link}" class="read-more" aria-label="Read full article: {safe_title}"
+                 style="color:{color};">Read full article&nbsp;<span aria-hidden="true">&rarr;</span></a>
             </article>""")
         cards_html = "".join(cards_parts)
 
@@ -458,13 +454,45 @@ def render_html(grouped, category_angles):
       outline: 2px solid #1a1a2e;
       outline-offset: 2px;
     }}
-    .topic-pill {{ transition: transform 0.2s, filter 0.2s; }}
+    .topic-pill {{
+      display: inline-block;
+      margin: 4px;
+      padding: 6px 14px;
+      color: #fff !important;
+      border-radius: 20px;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      transition: transform 0.2s, filter 0.2s;
+    }}
     .topic-pill:hover, .topic-pill:focus-visible {{
       transform: translateY(-1px) !important;
       filter: brightness(110%) !important;
     }}
-    .article-card {{ transition: border-color 0.2s, box-shadow 0.2s; }}
+    .article-card {{
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-left-width: 4px;
+      border-left-style: solid;
+      border-radius: 8px;
+      padding: 18px 20px;
+      margin-bottom: 16px;
+      display: block;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }}
     .article-card:hover {{ border-color: #999 !important; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }}
+    .article-title {{ margin: 0 0 8px 0; font-size: 17px; font-weight: 700; }}
+    .article-title a {{ color: #1a1a1a; text-decoration: none; }}
+    .source-badge {{
+      background: #f0f0f0;
+      color: #555;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 3px 9px;
+      border-radius: 12px;
+    }}
+    .article-summary {{ color: #444; font-size: 14px; line-height: 1.6; margin: 0 0 12px 0; }}
+    .read-more {{ font-size: 13px; font-weight: 600; text-decoration: none; }}
     .skip-link:focus {{
       position: static !important;
       width: auto !important;
