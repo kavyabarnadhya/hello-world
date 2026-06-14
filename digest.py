@@ -287,7 +287,9 @@ def classify_articles(articles):
         )
     articles_text = "".join(articles_text_parts)
 
-    prompt = f"""You are a UPSC exam preparation assistant focused on the Indian Civil Services Examination.
+    # Security: Use separate System message for instructions and persona, and User message
+    # for untrusted article data to mitigate prompt injection risks.
+    system_prompt = f"""You are a UPSC exam preparation assistant focused on the Indian Civil Services Examination.
 
 **Priority:** Strongly prefer articles with a direct India angle — Indian polity, governance, legislation, constitutional matters, Indian economy, Indian social issues, Indian environment policy, Indian science initiatives, India's defence, or Indian history and culture.
 
@@ -304,15 +306,17 @@ Return ONLY a JSON object (no markdown, no code fences, no explanation) with exa
    - summary: sharp UPSC-focused summary in 4-5 sentences. Lead with the core decision, judgment, or policy. Then include: (a) the specific constitutional article, act, scheme, or regulatory body involved by name; (b) one or two concrete data points such as numbers, percentages, timelines, or committee names; (c) the GS paper and syllabus topic this maps to (e.g. "GS-II: Parliament and State Legislatures"); (d) the exam-relevant implication or significance. Avoid generic commentary, journalistic opinion, and vague statements like "experts say" or "this is significant".
    Omit articles that are "Not UPSC Relevant" — do not include them in the array at all.
 
-2. "category_angles": an object mapping each topic that appeared in "articles" to an array of 3-5 bullet strings highlighting the collective UPSC exam relevance of all articles under that topic (mention specific GS papers, syllabus topics, or exam themes where applicable).
+2. "category_angles": an object mapping each topic that appeared in "articles" to an array of 3-5 bullet strings highlighting the collective UPSC exam relevance of all articles under that topic (mention specific GS papers, syllabus topics, or exam themes where applicable)."""
 
-Articles:
-{articles_text}"""
+    user_content = f"Articles to process:\n{articles_text}"
 
     try:
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
-            messages=[{"role": "user", "content": prompt}],
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_content}
+            ],
             temperature=0.2,
             max_tokens=8000,
             response_format={"type": "json_object"},
