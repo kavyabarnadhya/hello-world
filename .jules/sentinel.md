@@ -19,3 +19,9 @@
 **Learning:** AI-generated content should be treated as untrusted input. Trusting indices returned by an LLM without deduplication and bounding can lead to unbounded iteration or payload growth.
 **Fix:** Extracted LLM processing into `process_llm_articles()` with strict bounds: capped input iteration at 100, deduplicated indices via a `seen_indices` set, capped final article count at 50, and limited category topics to 20.
 **Prevention:** Always implement hard bounds and deduplication when mapping untrusted identifiers (like indices) back to internal data structures.
+
+## 2026-05-30 - LLM Role Separation for Injection Defense
+**Vulnerability:** Prompt injection risk where untrusted article data could override system instructions if both are sent in a single 'user' message.
+**Learning:** Sending instructions and untrusted data in the same message makes it easier for an attacker (or malformed input) to manipulate the model's behavior.
+**Fix:** Separated persona and instructions into a 'system' message, while keeping the external article data in a 'user' message.
+**Prevention:** Always use the 'system' role for static instructions and the 'user' role for dynamic/untrusted data to leverage the model's internal role-based priority and boundary enforcement.
