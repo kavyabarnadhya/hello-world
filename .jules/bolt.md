@@ -29,3 +29,7 @@
 ## 2026-06-13 - [Pre-calculating MIMEText body in email loops]
 **Learning:** When sending individual emails to a large recipient list, re-creating the `MIMEText` body part inside the loop causes redundant encoding and memory allocations. Pre-calculating this part once and attaching it to each `MIMEMultipart` message provides a measurable speedup in email generation.
 **Action:** Always pre-calculate static or common MIME parts outside of loops when sending bulk or multi-recipient emails.
+
+## 2026-06-14 - [Consolidating CSS to reduce HTML payload]
+**Learning:** In applications generating large HTML emails with repeated components (e.g., article cards), using repetitive inline styles significantly inflates the payload size. Moving these to a centralized `<style>` block using semantic CSS classes can reduce the HTML size by ~25%, which reduces both client-side rendering time and MIME encoding overhead.
+**Action:** Always use CSS classes for redundant structural elements in HTML templates, keeping only dynamic properties (like theme colors) inline.
