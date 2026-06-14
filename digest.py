@@ -448,14 +448,23 @@ def render_html(grouped, category_angles):
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
   <title>📰 UPSC News Digest – {today}</title>
   <style>
     html {{ scroll-behavior: smooth; }}
     a:hover {{ text-decoration: underline !important; }}
+    a:focus-visible {{
+      outline: 2px solid #1a1a2e;
+      outline-offset: 2px;
+    }}
+    .topic-pill {{ transition: transform 0.2s, filter 0.2s; }}
     .topic-pill:hover, .topic-pill:focus-visible {{
       transform: translateY(-1px) !important;
       filter: brightness(110%) !important;
     }}
+    .article-card {{ transition: border-color 0.2s, box-shadow 0.2s; }}
+    .article-card:hover {{ border-color: #999 !important; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }}
     .skip-link:focus {{
       position: static !important;
       width: auto !important;
@@ -465,6 +474,20 @@ def render_html(grouped, category_angles):
       padding: 10px;
       border: 2px solid #1a1a2e;
       z-index: 9999;
+    }}
+    @media (prefers-color-scheme: dark) {{
+      body {{ background: #121212 !important; color: #e0e0e0 !important; }}
+      #top {{ background: #121212 !important; }}
+      .topic-index, .article-card {{ background: #1e1e1e !important; border-color: #333 !important; }}
+      .article-card h3 a {{ color: #e0e0e0 !important; }}
+      .article-card p {{ color: #bbb !important; }}
+      .article-card span {{ background: #333 !important; color: #aaa !important; }}
+      .exam-angles {{ background: #1a1600 !important; border-left-color: #d97706 !important; }}
+      .exam-angles h3 {{ color: #f59e0b !important; }}
+      .exam-angles li {{ color: #d4d4d8 !important; }}
+      .footer {{ color: #888 !important; }}
+      .back-to-top a {{ color: #aaa !important; }}
+      a:focus-visible {{ outline-color: #fff !important; }}
     }}
     @media print {{
       body {{ background: #fff !important; }}
@@ -490,7 +513,7 @@ def render_html(grouped, category_angles):
 
     <!-- Header -->
     <div style="background:#1a1a2e;border-radius:10px;padding:28px 30px;margin-bottom:24px;text-align:center;">
-      <h1 style="color:#fff;margin:0 0 6px 0;font-size:26px;font-weight:700;">
+      <h1 style="color:#fff;margin:0 0 6px 0;font-size:26px;font-weight:700;letter-spacing:1px;">
         UPSC News Digest
       </h1>
       <p style="color:#aaa;margin:0;font-size:14px;">
