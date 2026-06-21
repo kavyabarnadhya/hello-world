@@ -170,6 +170,12 @@ TOPIC_ANCHORS = {
 }
 SAFE_TOPIC_NAMES = {topic: html.escape(topic) for topic in TOPIC_COLORS}
 
+# Optimization: Pre-calculate combined topic header fragments to save cycles during rendering
+TOPIC_HEADERS_HTML = {
+    topic: f"{TOPIC_ICON_TAGS.get(topic, '')}{SAFE_TOPIC_NAMES[topic]}"
+    for topic in TOPIC_COLORS
+}
+
 VALID_TOPICS = set(TOPIC_COLORS.keys()) | {"Not UPSC Relevant"}
 
 TOPIC_ORDER = [
@@ -347,15 +353,15 @@ def render_html(grouped, category_angles):
         anchor = TOPIC_ANCHORS[topic]
         # UX: Add estimated reading time per topic (3/4 of a minute per article, min 1)
         topic_time = max(1, round(count * 0.75))
-        # Optimization: Use pre-calculated icon tags
-        icon_tag = TOPIC_ICON_TAGS.get(topic, "")
+        # Optimization: Use pre-calculated topic header fragments
+        header_html = TOPIC_HEADERS_HTML.get(topic, safe_name)
         index_bar_parts.append(
-            f'<li role="listitem" style="display:inline-block;margin:0;">'
+            f'<li role="listitem" class="index-item">'
             f'<a href="#{anchor}" class="topic-pill" aria-label="Jump to {safe_name} section - {count} articles, {topic_time} min read" '
-            f'style="background:{color};">{icon_tag}{safe_name} ({count}) &bull; {topic_time} min</a>'
+            f'style="background:{color};">{header_html} ({count}) &bull; {topic_time} min</a>'
             f'</li>'
         )
-    index_bar_items = f'<ul role="list" style="list-style:none;padding:0;margin:0;">{"".join(index_bar_parts)}</ul>'
+    index_bar_items = f'<ul role="list" class="index-list">{"".join(index_bar_parts)}</ul>'
 
     # Article sections
     sections_parts = []
@@ -388,7 +394,7 @@ def render_html(grouped, category_angles):
               <h3 class="article-title">
                 <a href="{safe_link}">{safe_title}</a>
               </h3>
-              <div style="margin-bottom:10px;">
+              <div class="source-container">
                 <span class="source-badge">{safe_source}</span>
               </div>
               <p class="article-summary">
@@ -404,35 +410,31 @@ def render_html(grouped, category_angles):
         # Security: Ensure angles is a list to prevent iterating over characters if AI returns a string
         if isinstance(angles, list) and angles:
             # Security: Defensive string conversion to prevent crashes on non-string AI output
-            # UX: Bold GS paper references to help UPSC aspirants scan the digest more efficiently
-            bullets = "".join(
-                f'<li style="margin:4px 0;color:#78350f;font-size:13px;line-height:1.5;">'
-                f'{bold_gs(html.escape(str(b)))}</li>'
+            # UX: Batch bolding of GS paper references for better performance
+            bullets_list = [
+                f'<li class="exam-angle-bullet">{html.escape(str(b))}</li>'
                 for b in angles
-            )
+            ]
+            bullets = bold_gs("".join(bullets_list))
             angles_html = f"""
-          <div class="exam-angles" style="background:#fefce8;border-left:4px solid #f59e0b;
-                      padding:12px 16px;border-radius:4px;margin-bottom:20px;">
-            <h3 style="margin:0;display:inline;font-size:12px;font-weight:700;color:#b45309;
-                         text-transform:uppercase;letter-spacing:0.5px;">
+          <div class="exam-angles">
+            <h3 class="exam-angles-header">
               <span aria-hidden="true">🎓</span> UPSC Exam Angles
             </h3>
-            <ul style="margin:8px 0 0 0;padding-left:18px;">{bullets}</ul>
+            <ul class="exam-angles-list">{bullets}</ul>
           </div>"""
 
-        # Optimization: Use pre-calculated icon tags
-        icon_tag = TOPIC_ICON_TAGS.get(topic, "")
+        # Optimization: Use pre-calculated topic header fragments
+        header_html = TOPIC_HEADERS_HTML.get(topic, SAFE_TOPIC_NAMES.get(topic, topic))
         sections_parts.append(f"""
-        <section id="{anchor}" aria-labelledby="{header_id}" style="margin-bottom:36px;">
-          <h2 id="{header_id}" style="margin:0 0 16px 0;padding:12px 20px;background:{color};
-                     color:#fff;border-radius:6px;font-size:18px;font-weight:700;
-                     letter-spacing:0.5px;">
-            {icon_tag}{SAFE_TOPIC_NAMES[topic]}
+        <section id="{anchor}" aria-labelledby="{header_id}" class="topic-section">
+          <h2 id="{header_id}" class="topic-header" style="background:{color};">
+            {header_html}
           </h2>
           {angles_html}
           {cards_html}
-          <div class="back-to-top" style="text-align:right;">
-            <a href="#topic-index" aria-label="Back to topic index" style="color:#666;font-size:12px;text-decoration:none;">Back to topics&nbsp;<span aria-hidden="true">&uarr;</span></a>
+          <div class="back-to-top">
+            <a href="#topic-index" class="back-to-top-link" aria-label="Back to topic index">Back to topics&nbsp;<span aria-hidden="true">&uarr;</span></a>
           </div>
         </section>""")
 
@@ -456,6 +458,8 @@ def render_html(grouped, category_angles):
       outline: 2px solid #1a1a2e;
       outline-offset: 2px;
     }}
+    .index-list {{ list-style: none; padding: 0; margin: 0; }}
+    .index-item {{ display: inline-block; margin: 0; }}
     .topic-pill {{
       display: inline-block;
       margin: 4px;
@@ -470,6 +474,16 @@ def render_html(grouped, category_angles):
     .topic-pill:hover, .topic-pill:focus-visible {{
       transform: translateY(-1px) !important;
       filter: brightness(110%) !important;
+    }}
+    .topic-section {{ margin-bottom: 36px; }}
+    .topic-header {{
+      margin: 0 0 16px 0;
+      padding: 12px 20px;
+      color: #fff;
+      border-radius: 6px;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
     }}
     .article-card {{
       background: #fff;
@@ -495,6 +509,46 @@ def render_html(grouped, category_angles):
     }}
     .article-summary {{ color: #444; font-size: 14px; line-height: 1.6; margin: 0 0 12px 0; }}
     .read-more {{ font-size: 13px; font-weight: 600; text-decoration: none; }}
+    .source-container {{ margin-bottom: 10px; }}
+    .exam-angles {{
+      background: #fefce8;
+      border-left: 4px solid #f59e0b;
+      padding: 12px 16px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+    }}
+    .exam-angles-header {{
+      margin: 0;
+      display: inline;
+      font-size: 12px;
+      font-weight: 700;
+      color: #b45309;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }}
+    .exam-angles-list {{ margin: 8px 0 0 0; padding-left: 18px; }}
+    .exam-angle-bullet {{ margin: 4px 0; color: #78350f; font-size: 13px; line-height: 1.5; }}
+    .back-to-top {{ text-align: right; }}
+    .back-to-top-link {{ color: #666; font-size: 12px; text-decoration: none; }}
+    .main-header {{ background: #1a1a2e; border-radius: 10px; padding: 28px 30px; margin-bottom: 24px; text-align: center; }}
+    .main-title {{ color: #fff; margin: 0 0 6px 0; font-size: 26px; font-weight: 700; letter-spacing: 1px; }}
+    .main-subtitle {{ color: #aaa; margin: 0; font-size: 14px; }}
+    .topic-index {{
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin-bottom: 28px;
+    }}
+    .topic-index-header {{
+      margin: 0 0 10px 0;
+      font-size: 13px;
+      font-weight: 700;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }}
+    .footer {{ text-align: center; padding: 20px; color: #5e5e5e; font-size: 12px; }}
     .skip-link:focus {{
       position: static !important;
       width: auto !important;
@@ -542,11 +596,11 @@ def render_html(grouped, category_angles):
     </a>
 
     <!-- Header -->
-    <div style="background:#1a1a2e;border-radius:10px;padding:28px 30px;margin-bottom:24px;text-align:center;">
-      <h1 style="color:#fff;margin:0 0 6px 0;font-size:26px;font-weight:700;letter-spacing:1px;">
+    <div class="main-header">
+      <h1 class="main-title">
         UPSC News Digest
       </h1>
-      <p style="color:#aaa;margin:0;font-size:14px;">
+      <p class="main-subtitle">
         <span aria-hidden="true">📅 </span>{today} <span aria-hidden="true">&bull;</span>
         <span aria-hidden="true">📰 </span>{total_articles} articles <span aria-hidden="true">&bull;</span>
         <span aria-hidden="true">⏱️ </span>{reading_time} min read
@@ -554,10 +608,8 @@ def render_html(grouped, category_angles):
     </div>
 
     <!-- Topic Index Bar -->
-    <nav id="topic-index" class="topic-index" aria-labelledby="topic-index-header" style="background:#fff;border:1px solid #e0e0e0;border-radius:8px;
-                padding:16px 20px;margin-bottom:28px;">
-      <h2 id="topic-index-header" style="margin:0 0 10px 0;font-size:13px;font-weight:700;color:#555;
-                text-transform:uppercase;letter-spacing:0.5px;">Topics in this digest</h2>
+    <nav id="topic-index" class="topic-index" aria-labelledby="topic-index-header">
+      <h2 id="topic-index-header" class="topic-index-header">Topics in this digest</h2>
       <div>{index_bar_items}</div>
     </nav>
 
@@ -567,7 +619,7 @@ def render_html(grouped, category_angles):
     </main>
 
     <!-- Footer -->
-    <div class="footer" style="text-align:center;padding:20px;color:#5e5e5e;font-size:12px;">
+    <div class="footer">
       Generated automatically by UPSC News Digest <span aria-hidden="true">&bull;</span> Powered by Llama 3.3 via Groq
     </div>
   </div>
