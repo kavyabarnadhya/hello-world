@@ -576,14 +576,24 @@ def render_html(grouped, category_angles):
 
 def validate_env():
     """
-    Security: Validates that all required environment variables are present
-    and follow basic format expectations before starting the process.
+    Security: Validates that all required environment variables are present,
+    within size limits, and follow basic format expectations before starting.
     """
     required = ["SENDER_EMAIL", "SENDER_APP_PASSWORD", "RECEIVER_EMAIL", "GROQ_API_KEY"]
     for var in required:
         val = str(os.getenv(var, "")).strip()
         if not val:
             raise ValueError(f"Missing required environment variable: {var}")
+
+        # Security: Enforce maximum length to prevent resource exhaustion (DoS)
+        # RECEIVER_EMAIL can be a list, so it gets a larger limit (5000). Others are capped at 200.
+        max_len = 5000 if var == "RECEIVER_EMAIL" else 200
+        if len(val) > max_len:
+            raise ValueError(f"Environment variable {var} exceeds maximum length of {max_len} characters.")
+
+        # Security: Reject control characters to prevent header injection or other malformed input issues
+        if "\r" in val or "\n" in val:
+            raise ValueError(f"Environment variable {var} contains forbidden control characters.")
 
         # Security: Prevent usage of placeholder values from .env.example or common patterns
         low_val = val.lower()
