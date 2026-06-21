@@ -345,12 +345,14 @@ def render_html(grouped, category_angles):
         count = len(grouped[topic])
         safe_name = SAFE_TOPIC_NAMES[topic]
         anchor = TOPIC_ANCHORS[topic]
+        # UX: Add estimated reading time per topic (3/4 of a minute per article, min 1)
+        topic_time = max(1, round(count * 0.75))
         # Optimization: Use pre-calculated icon tags
         icon_tag = TOPIC_ICON_TAGS.get(topic, "")
         index_bar_parts.append(
             f'<li role="listitem" style="display:inline-block;margin:0;">'
-            f'<a href="#{anchor}" class="topic-pill" aria-label="Jump to {safe_name} section - {count} articles" '
-            f'style="background:{color};">{icon_tag}{safe_name} ({count})</a>'
+            f'<a href="#{anchor}" class="topic-pill" aria-label="Jump to {safe_name} section - {count} articles, {topic_time} min read" '
+            f'style="background:{color};">{icon_tag}{safe_name} ({count}) &bull; {topic_time} min</a>'
             f'</li>'
         )
     index_bar_items = f'<ul role="list" style="list-style:none;padding:0;margin:0;">{"".join(index_bar_parts)}</ul>'
@@ -430,7 +432,7 @@ def render_html(grouped, category_angles):
           {angles_html}
           {cards_html}
           <div class="back-to-top" style="text-align:right;">
-            <a href="#top" aria-label="Back to topic index" style="color:#666;font-size:12px;text-decoration:none;">Back to top&nbsp;<span aria-hidden="true">&uarr;</span></a>
+            <a href="#topic-index" aria-label="Back to topic index" style="color:#666;font-size:12px;text-decoration:none;">Back to topics&nbsp;<span aria-hidden="true">&uarr;</span></a>
           </div>
         </section>""")
 
@@ -481,7 +483,7 @@ def render_html(grouped, category_angles):
       transition: border-color 0.2s, box-shadow 0.2s;
     }}
     .article-card:hover {{ border-color: #999 !important; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }}
-    .article-title {{ margin: 0 0 8px 0; font-size: 17px; font-weight: 700; }}
+    .article-title {{ margin: 0 0 8px 0; font-size: 17px; font-weight: 700; letter-spacing: 0.2px; }}
     .article-title a {{ color: #1a1a1a; text-decoration: none; }}
     .source-badge {{
       background: #f0f0f0;
@@ -552,7 +554,7 @@ def render_html(grouped, category_angles):
     </div>
 
     <!-- Topic Index Bar -->
-    <nav class="topic-index" aria-labelledby="topic-index-header" style="background:#fff;border:1px solid #e0e0e0;border-radius:8px;
+    <nav id="topic-index" class="topic-index" aria-labelledby="topic-index-header" style="background:#fff;border:1px solid #e0e0e0;border-radius:8px;
                 padding:16px 20px;margin-bottom:28px;">
       <h2 id="topic-index-header" style="margin:0 0 10px 0;font-size:13px;font-weight:700;color:#555;
                 text-transform:uppercase;letter-spacing:0.5px;">Topics in this digest</h2>
