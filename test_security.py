@@ -12,7 +12,7 @@ class TestSecurity(unittest.TestCase):
             "SENDER_EMAIL": "sender@test.test",
             "SENDER_APP_PASSWORD": "abcd efgh ijkl mnop",
             "RECEIVER_EMAIL": "receiver@test.test",
-            "GROQ_API_KEY": "gsk_test_key"
+            "GROQ_API_KEY": "gsk_test_key_very_long_to_pass_validation"
         }
 
     def test_validate_env_valid(self):
@@ -79,6 +79,18 @@ class TestSecurity(unittest.TestCase):
         with patch.dict(os.environ, env, clear=True):
             with self.assertRaisesRegex(ValueError, "exceeds maximum length"):
                 digest.validate_env()
+
+    def test_clean_text_removes_control_characters(self):
+        # Test string with null byte and other non-printable control characters
+        dirty_text = "Hello\0 World\x01\x1f\x7f"
+        cleaned_text = digest.clean_text(dirty_text)
+        self.assertEqual(cleaned_text, "Hello World")
+
+        # Test that allowed whitespace (tab, newline, carriage return) is NOT removed by CONTROL_CHAR_RE
+        # but stripped by final .strip() if at ends
+        whitespace_text = " \t\r\nHello\nWorld "
+        cleaned_whitespace = digest.clean_text(whitespace_text)
+        self.assertEqual(cleaned_whitespace, "Hello\nWorld")
 
 if __name__ == "__main__":
     unittest.main()

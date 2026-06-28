@@ -23,6 +23,9 @@ socket.setdefaulttimeout(30)
 # Pre-compiled regex for stripping HTML tags; more efficient than calling re.sub in a loop
 TAG_RE = re.compile(r"<[^>]+>")
 
+# Pre-compiled regex for stripping null bytes and non-printable control characters
+CONTROL_CHAR_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
+
 # Pre-compiled regex for bolding GS paper references (GS-I to GS-IV) for better scannability
 GS_RE = re.compile(r"(GS-[IVX]+)")
 GS_BOLD = r"<strong>\1</strong>"
@@ -46,6 +49,8 @@ def clean_text(text):
     """
     if not text:
         return ""
+    # Security: Strip null bytes and non-printable control characters
+    text = CONTROL_CHAR_RE.sub("", text)
     # Optimization: Truncate raw input to 2000 chars to avoid expensive processing on large payloads
     text = text[:2000]
     # Optimization: Only unescape and strip tags if they are actually present to save CPU cycles
@@ -207,7 +212,7 @@ def fetch_from_feed(url, source_name, limit=3):
             # and the original summary is not displayed in the final email.
             summary = summary[:400]
             articles.append({
-                "title": str(entry.get("title", ""))[:200],
+                "title": clean_text(str(entry.get("title", "")))[:200],
                 "link":  str(entry.get("link", ""))[:500],
                 "summary": summary,
                 "source": source_name,
@@ -447,6 +452,7 @@ def render_html(grouped, category_angles):
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src *; style-src 'unsafe-inline';">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light dark">
   <meta name="supported-color-schemes" content="light dark">
@@ -661,10 +667,17 @@ def validate_env():
     if not email_regex.match(sender):
         raise ValueError("SENDER_EMAIL does not appear to be a valid email address.")
 
-    # Security: Validate GROQ_API_KEY format (starts with gsk_)
+    # Security: Validate GROQ_API_KEY format (starts with gsk_) and minimum length
     groq_key = os.getenv("GROQ_API_KEY", "").strip()
     if not groq_key.startswith("gsk_"):
         raise ValueError("GROQ_API_KEY must start with 'gsk_' (standard Groq key prefix).")
+    if len(groq_key) < 30:
+        raise ValueError("GROQ_API_KEY is too short (minimum 30 characters required).")
+
+    # Security: Validate SENDER_APP_PASSWORD minimum length
+    app_password = os.getenv("SENDER_APP_PASSWORD", "").strip()
+    if len(app_password) < 12:
+        raise ValueError("SENDER_APP_PASSWORD is too short (minimum 12 characters required).")
 
     receivers = [r.strip() for r in os.getenv("RECEIVER_EMAIL", "").split(",") if r.strip()]
     if not receivers:
