@@ -25,3 +25,8 @@
 **Learning:** Sending instructions and untrusted data in the same message makes it easier for an attacker (or malformed input) to manipulate the model's behavior.
 **Fix:** Separated persona and instructions into a 'system' message, while keeping the external article data in a 'user' message.
 **Prevention:** Always use the 'system' role for static instructions and the 'user' role for dynamic/untrusted data to leverage the model's internal role-based priority and boundary enforcement.
+
+## 2026-06-28 - Defense in Depth: CSP and Control Character Sanitization
+**Vulnerability:** Risk of XSS in web-based email clients and potential logic errors/injection via malformed control characters in RSS feeds.
+**Learning:** Even with HTML escaping, adding a CSP provides a critical second layer of defense. Sanitizing control characters early in the pipeline prevents them from reaching sensitive sinks (LLM, HTML renderer).
+**Prevention:** Always implement CSP where possible and sanitize all untrusted text inputs for non-printable characters at the boundaries.
