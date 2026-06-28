@@ -42,17 +42,17 @@ def bold_gs(text):
     return text
 
 
-def clean_text(text):
+def clean_text(text, max_len=2000):
     """
     Performance Optimization: Strips HTML tags and unescapes entities from RSS summaries
     to reduce token usage in LLM prompts and improve classification accuracy.
     """
     if not text:
         return ""
+    # Optimization: Truncate raw input early to avoid expensive processing on large payloads
+    text = text[:max_len]
     # Security: Strip null bytes and non-printable control characters
     text = CONTROL_CHAR_RE.sub("", text)
-    # Optimization: Truncate raw input to 2000 chars to avoid expensive processing on large payloads
-    text = text[:2000]
     # Optimization: Only unescape and strip tags if they are actually present to save CPU cycles
     if "&" in text:
         text = html.unescape(text)
@@ -207,12 +207,11 @@ def fetch_from_feed(url, source_name, limit=3):
         for entry in feed.entries[:limit]:
             raw_summary = getattr(entry, "summary", "") or getattr(entry, "description", "")
             # Apply clean_text early to save memory and token budget
-            summary = clean_text(raw_summary)
-            # Optimization: Truncate cleaned summary to 400 chars. We only use 300 for classification
-            # and the original summary is not displayed in the final email.
-            summary = summary[:400]
+            # Optimization: Use max_len=400 to avoid processing large RSS summaries.
+            # We only use ~300 for classification and summaries are not in the final email.
+            summary = clean_text(raw_summary, max_len=400)
             articles.append({
-                "title": clean_text(str(entry.get("title", "")))[:200],
+                "title": clean_text(str(entry.get("title", "")), max_len=200),
                 "link":  str(entry.get("link", ""))[:500],
                 "summary": summary,
                 "source": source_name,
