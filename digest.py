@@ -28,7 +28,7 @@ CONTROL_CHAR_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 
 # Pre-compiled regex for bolding GS paper references (GS-I to GS-IV) for better scannability
 GS_RE = re.compile(r"(GS-[IVX]+)")
-GS_BOLD = r"<strong>\1</strong>"
+GS_BOLD = r'<strong class="gs-tag">\1</strong>'
 
 
 def bold_gs(text):
@@ -427,6 +427,9 @@ def render_html(grouped, category_angles):
               <span aria-hidden="true">🎓</span> UPSC Exam Angles
             </h3>
             <ul class="exam-angles-list">{bullets}</ul>
+            <div class="back-to-top" style="margin-top: 8px;">
+              <a href="#topic-index" class="back-to-top-link" aria-label="Back to topic index" style="font-size: 11px;">Back to topics&nbsp;<span aria-hidden="true">&uarr;</span></a>
+            </div>
           </div>"""
 
         # Optimization: Use pre-calculated topic header fragments
@@ -504,6 +507,15 @@ def render_html(grouped, category_angles):
       transition: border-color 0.2s, box-shadow 0.2s;
     }}
     .article-card:hover {{ border-color: #999 !important; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }}
+    .gs-tag {{
+      background: #1a1a2e;
+      color: #fff !important;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+      letter-spacing: 0.5px;
+      display: inline-block;
+    }}
     .article-title {{ margin: 0 0 8px 0; font-size: 17px; font-weight: 700; letter-spacing: 0.2px; }}
     .article-title a {{ color: #1a1a1a; text-decoration: none; }}
     .source-badge {{
@@ -576,6 +588,7 @@ def render_html(grouped, category_angles):
       .exam-angles {{ background: #1a1600 !important; border-left-color: #d97706 !important; }}
       .exam-angles h3 {{ color: #f59e0b !important; }}
       .exam-angles li {{ color: #d4d4d8 !important; }}
+      .gs-tag {{ background: #444 !important; color: #fff !important; }}
       .footer {{ color: #888 !important; }}
       .back-to-top a {{ color: #aaa !important; }}
       a:focus-visible {{ outline-color: #fff !important; }}
@@ -632,7 +645,7 @@ def render_html(grouped, category_angles):
   </div>
 </body>
 </html>"""
-    return full_html
+    return full_html, total_articles, reading_time
 
 
 def validate_env():
@@ -690,7 +703,7 @@ def validate_env():
             raise ValueError(f"RECEIVER_EMAIL contains an invalid email address: {r}")
 
 
-def send_email(html_body):
+def send_email(html_body, total_articles=None, reading_time=None):
     # Security: Sanitize sender email to prevent header injection
     sender_raw = os.getenv("SENDER_EMAIL")
     sender = sender_raw.strip().replace("\r", "").replace("\n", "") if sender_raw else None
@@ -720,7 +733,10 @@ def send_email(html_body):
         # This prevents recipients from seeing each other's email addresses in the 'To' header.
         for recipient in receivers:
             msg = MIMEMultipart("alternative")
-            msg["Subject"] = f"UPSC News Digest – {today}"
+            subject = f"UPSC News Digest – {today}"
+            if total_articles is not None and reading_time is not None:
+                subject += f" ({total_articles} articles • {reading_time} min read)"
+            msg["Subject"] = subject
             msg["From"] = sender
             msg["To"] = recipient
 
@@ -813,7 +829,7 @@ if __name__ == "__main__":
         for a in classified:
             grouped_raw[a["topic"]].append(a)
         grouped = {t: grouped_raw[t] for t in TOPIC_ORDER if t in grouped_raw}
-        html_body = render_html(grouped, category_angles)
+        html_body, total_count, read_time = render_html(grouped, category_angles)
         print(f"  Topics covered: {', '.join(grouped.keys())}")
     except Exception as e:
         print(f"FATAL: HTML rendering failed: {e}")
@@ -821,7 +837,7 @@ if __name__ == "__main__":
 
     print("\n[4/4] Sending email via Gmail SMTP...")
     try:
-        send_email(html_body)
+        send_email(html_body, total_count, read_time)
         print("  Email sent successfully!")
     except Exception as e:
         print(f"FATAL: Email sending failed: {e}")
