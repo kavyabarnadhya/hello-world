@@ -149,7 +149,7 @@ TOPIC_ICON_TAGS = {
 TOPIC_LIST_STR = ", ".join(sorted(TOPIC_COLORS.keys()))
 
 # Optimization: Pre-calculate the static LLM system prompt to avoid redundant construction
-SYSTEM_PROMPT = f"""You are a UPSC exam preparation assistant focused on the Indian Civil Services Examination.
+SYSTEM_PROMPT = f"""You are a UPSC exam preparation assistant focused on the Indian Civil Services Examination. You will be provided with a JSON array of news articles to process.
 
 **Priority:** Strongly prefer articles with a direct India angle — Indian polity, governance, legislation, constitutional matters, Indian economy, Indian social issues, Indian environment policy, Indian science initiatives, India's defence, or Indian history and culture.
 
@@ -306,20 +306,21 @@ def classify_articles(articles):
     articles = articles[:50]
     client = get_groq_client()
 
-    # Optimization: Use list-based join for efficient string building
-    articles_text_parts = []
-    for i, a in enumerate(articles):
-        articles_text_parts.append(
-            f"\n--- Article {i} ---\n"
-            f"Title: {a['title']}\n"
-            f"Source: {a['source']}\n"
-            f"Summary: {a['summary'][:300]}\n"
-        )
-    articles_text = "".join(articles_text_parts)
+    # Security: Use JSON for untrusted input to provide a structural boundary,
+    # mitigating prompt injection risks where malicious content could spoof custom delimiters.
+    articles_json = json.dumps([
+        {
+            "index": i,
+            "title": a["title"],
+            "source": a["source"],
+            "summary": a["summary"][:300]
+        }
+        for i, a in enumerate(articles)
+    ], indent=2)
 
     # Security: Use separate System message for instructions and persona, and User message
     # for untrusted article data to mitigate prompt injection risks.
-    user_content = f"Articles to process:\n{articles_text}"
+    user_content = f"Articles to process (JSON array):\n{articles_json}"
 
     try:
         response = client.chat.completions.create(
@@ -451,6 +452,7 @@ def render_html(grouped, category_angles):
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src *; style-src 'unsafe-inline';">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light dark">

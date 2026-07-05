@@ -30,3 +30,8 @@
 **Vulnerability:** Risk of XSS in web-based email clients and potential logic errors/injection via malformed control characters in RSS feeds.
 **Learning:** Even with HTML escaping, adding a CSP provides a critical second layer of defense. Sanitizing control characters early in the pipeline prevents them from reaching sensitive sinks (LLM, HTML renderer).
 **Prevention:** Always implement CSP where possible and sanitize all untrusted text inputs for non-printable characters at the boundaries.
+
+## 2026-07-05 - JSON-Structured Input for Prompt Injection Defense
+**Vulnerability:** Risk of prompt injection where malicious or malformed RSS content could spoof custom delimiters (e.g., "--- Article X ---") to manipulate LLM classification or summary output.
+**Learning:** Custom string delimiters are fragile and easily spoofed by untrusted content. LLMs are highly proficient at parsing standard structured formats like JSON, which provides a more robust structural boundary between instruction and data.
+**Prevention:** Always use `json.dumps()` to wrap untrusted data arrays or objects before sending them to an LLM. Update system prompts to explicitly state that input will be provided in JSON format to reinforce structural expectations.
