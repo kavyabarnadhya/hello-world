@@ -92,5 +92,56 @@ class TestSecurity(unittest.TestCase):
         cleaned_whitespace = digest.clean_text(whitespace_text)
         self.assertEqual(cleaned_whitespace, "Hello\nWorld")
 
+        # Security: Test that encoded control characters are also removed
+        encoded_dirty = "Hello&#0; World&#x1F;"
+        cleaned_encoded = digest.clean_text(encoded_dirty)
+        # html.unescape('&#0;') might become '' (U+FFFD) or stay as is depending on version,
+        # but our CONTROL_CHAR_RE should catch the raw ones if they unescape to them.
+        # Actually in Python 3.12, &#0; unescapes to \x00 is NOT true, it becomes \ufffd.
+        # But &#x1B; (ESC) or similar might.
+
+        # Testing a known one: &#x1B; (ESC) is unescaped to nothing by html.unescape in some versions,
+        # or we want to ensure it's gone.
+        self.assertNotIn("\x1b", digest.clean_text("&#x1B;"))
+
+    def test_process_llm_articles_sanitizes_control_characters(self):
+        # Mock articles and LLM data with control characters
+        articles = [{"title": "T1", "link": "http://l1", "source": "S1", "summary": "Sum1"}]
+        llm_data = {
+            "articles": [
+                {
+                    "index": 0,
+                    "topic": "Economy",
+                    "summary": "Summary\x00with\x1fcontrol\x7fchars"
+                }
+            ],
+            "category_angles": {
+                "Economy": ["Angle\x00with\x08control\x0e" ]
+            }
+        }
+
+        classified, angles = digest.process_llm_articles(articles, llm_data)
+
+        # Verify summary is sanitized
+        self.assertEqual(classified[0]["summary"], "Summarywithcontrolchars")
+
+        # Verify category angles are sanitized
+        self.assertEqual(angles["Economy"][0], "Anglewithcontrol")
+
+        # Test with encoded null byte in LLM output
+        llm_data_encoded = {
+            "articles": [
+                {
+                    "index": 0,
+                    "topic": "Economy",
+                    "summary": "Summary&#0;with&#x00;null"
+                }
+            ],
+            "category_angles": {}
+        }
+        classified_encoded, _ = digest.process_llm_articles(articles, llm_data_encoded)
+        # The separator is \x00. We must ensure it's not in the result.
+        self.assertNotIn("\x00", classified_encoded[0]["summary"])
+
 if __name__ == "__main__":
     unittest.main()

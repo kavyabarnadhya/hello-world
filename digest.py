@@ -60,22 +60,22 @@ def batch_process_text(texts, do_bold=False):
     return safe.split("\x00")
 
 
-def clean_text(text, max_len=2000):
+def clean_text(text, max_len=2000, strip_tags=True):
     """
-    Performance Optimization: Strips HTML tags and unescapes entities from RSS summaries
-    to reduce token usage in LLM prompts and improve classification accuracy.
+    Performance Optimization: Strips HTML tags and unescapes entities from text.
+    Security: Strips control characters after unescaping to prevent bypasses.
     """
     if not text:
         return ""
     # Optimization: Truncate raw input early to avoid expensive processing on large payloads
     text = text[:max_len]
-    # Security: Strip null bytes and non-printable control characters
-    text = CONTROL_CHAR_RE.sub("", text)
-    # Optimization: Only unescape and strip tags if they are actually present to save CPU cycles
+    # Optimization: Only unescape if entities are actually present
     if "&" in text:
         text = html.unescape(text)
-    if "<" in text:
+    if strip_tags and "<" in text:
         text = TAG_RE.sub("", text)
+    # Security: Strip null bytes and non-printable control characters AFTER unescaping
+    text = CONTROL_CHAR_RE.sub("", text)
     return text.strip()
 
 
@@ -281,8 +281,11 @@ def process_llm_articles(articles, data):
             if i >= 20:
                 break
             if isinstance(angles, list):
+                # Security: Strip control characters to prevent collisions in batch processing
                 # Limit to 5 bullets per topic, each max 300 chars
-                category_angles[str(topic)] = [str(b)[:300] for b in angles[:5]]
+                category_angles[str(topic)] = [
+                    clean_text(str(b), max_len=300, strip_tags=False) for b in angles[:5]
+                ]
 
     if not isinstance(classified, list):
         return [], category_angles
@@ -304,13 +307,14 @@ def process_llm_articles(articles, data):
         seen_indices.add(idx)
         original = articles[idx]
         # Security: Defensive conversion to string and truncation before being used in HTML rendering
+        # Security: Strip control characters to prevent collisions in batch processing
         # Limit summary to 1000 chars to prevent DoS via extremely large email payloads.
         result.append({
             "title": original["title"],
             "link": original["link"],
             "source": original["source"],
             "topic": topic,
-            "summary": str(item.get("summary", ""))[:1000],
+            "summary": clean_text(str(item.get("summary", "")), max_len=1000, strip_tags=False),
         })
 
         # Security: Final cap on total articles to keep payload size predictable
