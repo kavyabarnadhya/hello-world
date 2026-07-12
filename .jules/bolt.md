@@ -37,3 +37,7 @@
 ## 2026-06-28 - [Early Truncation for Text Processing]
 **Learning:** When processing untrusted external data (like RSS summaries) that requires regex sanitization or HTML unescaping, performing string truncation *before* these operations is significantly more efficient than doing it after. In this codebase, moving the truncation to the top of `clean_text` resulted in a ~500x speedup for 1MB inputs by avoiding the processing of hundreds of thousands of characters that would ultimately be discarded.
 **Action:** Implement 'early truncation' in all sanitization utilities to minimize CPU cycles spent on discarded data.
+
+## 2026-06-29 - [Batching Heterogeneous Strings for Sanitization]
+**Learning:** In high-frequency rendering loops, calling sanitization utilities (like `batch_process_text`) multiple times with small lists of different fields (titles, links, sources) introduces significant overhead from repeated list joins and regex initialization. Consolidating these into a single large batch, even when they represent different semantic fields, amortizes this overhead.
+**Action:** Group heterogeneous string fields into the largest possible batches before processing, using index-based slicing or mapping to redistribute the results correctly.

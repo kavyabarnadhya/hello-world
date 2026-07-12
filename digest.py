@@ -220,6 +220,17 @@ TOPIC_HEADERS_HTML = {
 
 VALID_TOPICS = set(TOPIC_COLORS.keys()) | {"Not UPSC Relevant"}
 
+# Optimization: Pre-calculate static back-to-topics navigation fragments
+BACK_TO_TOPICS_HTML = """
+          <div class="back-to-top">
+            <a href="#topic-index" class="back-to-top-link" aria-label="Back to topic index">Back to topics&nbsp;<span aria-hidden="true">&uarr;</span></a>
+          </div>"""
+
+BACK_TO_TOPICS_SMALL_HTML = """
+            <div class="back-to-top" style="margin-top: 8px;">
+              <a href="#topic-index" class="back-to-top-link" aria-label="Back to topic index" style="font-size: 11px;">Back to topics&nbsp;<span aria-hidden="true">&uarr;</span></a>
+            </div>"""
+
 TOPIC_ORDER = [
     "Polity & Governance",
     "Economy",
@@ -393,23 +404,42 @@ def render_html(grouped, category_angles):
     # Performance Optimization: Batch process all article content and category angles
     # before rendering to minimize function calls and regex engine overhead.
 
-    # 1. Flatten articles and prepare fields for batch processing
+    # 1. Gather all raw text for consolidated batch processing
     all_articles_flat = [a for topic in topics_present for a in grouped[topic]]
-    raw_links = []
+    titles = [a.get("title", "") for a in all_articles_flat]
+    sources = [a.get("source", "") for a in all_articles_flat]
+    summaries = [a.get("summary", "") for a in all_articles_flat]
+    links = []
     for a in all_articles_flat:
         l = a.get("link", "")
         # Security: Case-insensitive protocol check
         if not isinstance(l, str) or not l.lower().startswith(("http://", "https://")):
             l = "#"
-        raw_links.append(str(l))
+        links.append(str(l))
 
-    # 2. Execute batch processing (HTML escaping and GS bolding)
-    safe_titles = batch_process_text([a.get("title", "") for a in all_articles_flat])
-    safe_sources = batch_process_text([a.get("source", "") for a in all_articles_flat])
-    safe_summaries = batch_process_text([a.get("summary", "") for a in all_articles_flat], do_bold=True)
-    safe_links = batch_process_text(raw_links)
+    all_angles_flat = []
+    angle_topic_map = []
+    for topic in topics_present:
+        angles = category_angles.get(topic, [])
+        if isinstance(angles, list):
+            for b in angles:
+                all_angles_flat.append(str(b))
+                angle_topic_map.append(topic)
 
-    # 3. Create a clean mapping of safe data to keep rendering loops maintainable
+    # 2. Execute consolidated batch processing (HTML escaping and GS bolding)
+    # Batch 1: Non-boldable content (titles, sources, links)
+    n_art = len(all_articles_flat)
+    safe_nobold = batch_process_text(titles + sources + links, do_bold=False)
+    safe_titles = safe_nobold[:n_art]
+    safe_sources = safe_nobold[n_art : 2*n_art]
+    safe_links = safe_nobold[2*n_art:]
+
+    # Batch 2: Boldable content (summaries, category angles)
+    safe_bold = batch_process_text(summaries + all_angles_flat, do_bold=True)
+    safe_summaries = safe_bold[:n_art]
+    safe_angles_list = safe_bold[n_art:]
+
+    # 3. Redistribute safe data into mapping structures
     safe_grouped = collections.defaultdict(list)
     cursor = 0
     for topic in topics_present:
@@ -425,17 +455,6 @@ def render_html(grouped, category_angles):
             })
             cursor += 1
 
-    # 4. Batch process all category angle bullets
-    all_angles_flat = []
-    angle_topic_map = []
-    for topic in topics_present:
-        angles = category_angles.get(topic, [])
-        if isinstance(angles, list):
-            for b in angles:
-                all_angles_flat.append(str(b))
-                angle_topic_map.append(topic)
-
-    safe_angles_list = batch_process_text(all_angles_flat, do_bold=True)
     safe_angles_grouped = collections.defaultdict(list)
     for i, safe_angle in enumerate(safe_angles_list):
         safe_angles_grouped[angle_topic_map[i]].append(safe_angle)
@@ -505,9 +524,7 @@ def render_html(grouped, category_angles):
               <span aria-hidden="true">🎓</span> UPSC Exam Angles
             </h3>
             <ul class="exam-angles-list">{bullets}</ul>
-            <div class="back-to-top" style="margin-top: 8px;">
-              <a href="#topic-index" class="back-to-top-link" aria-label="Back to topic index" style="font-size: 11px;">Back to topics&nbsp;<span aria-hidden="true">&uarr;</span></a>
-            </div>
+            {BACK_TO_TOPICS_SMALL_HTML}
           </div>"""
 
         # Optimization: Use pre-calculated topic header fragments
@@ -519,9 +536,7 @@ def render_html(grouped, category_angles):
           </h2>
           {angles_html}
           {cards_html}
-          <div class="back-to-top">
-            <a href="#topic-index" class="back-to-top-link" aria-label="Back to topic index">Back to topics&nbsp;<span aria-hidden="true">&uarr;</span></a>
-          </div>
+          {BACK_TO_TOPICS_HTML}
         </section>""")
 
     sections_html = "".join(sections_parts)
