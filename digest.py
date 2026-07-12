@@ -163,6 +163,25 @@ TOPIC_ICON_TAGS = {
     for topic, icon in TOPIC_ICONS.items()
 }
 
+SOURCE_ICONS = {
+    "The Hindu": "🗞️",
+    "Indian Express": "📰",
+    "The Print": "🖋️",
+    "LiveMint": "📈",
+    "BBC World": "🌐",
+    "Economic Times": "📉",
+    "DD News": "📺",
+    "downtoearth.org.in": "🌱",
+    "thewire.in": "🔗",
+    "scroll.in": "📜",
+}
+
+# Optimization: Pre-calculate source icon tags for faster rendering
+SOURCE_ICON_TAGS = {
+    src: f'<span aria-hidden="true" style="margin-right:4px;">{icon}</span>'
+    for src, icon in SOURCE_ICONS.items()
+}
+
 # Optimization: Pre-calculate sorted topic list string for the LLM prompt
 TOPIC_LIST_STR = ", ".join(sorted(TOPIC_COLORS.keys()))
 
@@ -395,9 +414,12 @@ def render_html(grouped, category_angles):
     cursor = 0
     for topic in topics_present:
         for _ in grouped[topic]:
+            # Capture raw source name for icon lookup
+            raw_source = all_articles_flat[cursor].get("source", "")
             safe_grouped[topic].append({
                 "title": safe_titles[cursor],
                 "source": safe_sources[cursor],
+                "raw_source": raw_source,
                 "summary": safe_summaries[cursor],
                 "link": safe_links[cursor]
             })
@@ -451,8 +473,11 @@ def render_html(grouped, category_angles):
         for a in articles:
             safe_title = a["title"]
             safe_source = a["source"]
+            raw_source = a.get("raw_source", "")
             safe_summary = a["summary"]
             safe_link = a["link"]
+
+            source_icon = SOURCE_ICON_TAGS.get(raw_source, "")
 
             cards_parts.append(f"""
             <article class="article-card" style="border-left-color:{color};">
@@ -460,7 +485,7 @@ def render_html(grouped, category_angles):
                 <a href="{safe_link}">{safe_title}</a>
               </h3>
               <div class="source-container">
-                <span class="source-badge">{safe_source}</span>
+                <span class="source-badge">{source_icon}{safe_source}</span>
               </div>
               <p class="article-summary">
                 {safe_summary}
@@ -559,7 +584,10 @@ def render_html(grouped, category_angles):
       display: block;
       transition: border-color 0.2s, box-shadow 0.2s;
     }}
-    .article-card:hover {{ border-color: #999 !important; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }}
+    .article-card:hover, .article-card:focus-within {{
+      border-color: #999 !important;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+    }}
     .gs-tag {{
       background: #1a1a2e;
       color: #fff !important;
