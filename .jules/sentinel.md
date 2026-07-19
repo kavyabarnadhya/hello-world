@@ -35,3 +35,8 @@
 **Vulnerability:** Risk of prompt injection where malicious or malformed RSS content could spoof custom delimiters (e.g., "--- Article X ---") to manipulate LLM classification or summary output.
 **Learning:** Custom string delimiters are fragile and easily spoofed by untrusted content. LLMs are highly proficient at parsing standard structured formats like JSON, which provides a more robust structural boundary between instruction and data.
 **Prevention:** Always use `json.dumps()` to wrap untrusted data arrays or objects before sending them to an LLM. Update system prompts to explicitly state that input will be provided in JSON format to reinforce structural expectations.
+
+## 2026-07-12 - RSS Feed URL Whitelisting & Secure TLS Protocols
+**Vulnerability:** Risk of Server-Side Request Forgery (SSRF), unauthorized outgoing network requests, or TLS protocol downgrade attacks on SMTP connections.
+**Learning:** Even if the application currently uses a fixed list of static RSS feeds, dynamically fetched URL parameters are vulnerable if downstream modules are modified. In addition, default SSL contexts can sometimes allow weak legacy protocols depending on the client system configuration.
+**Prevention:** Define a strict whitelisted set of URLs (`ALLOWED_FEEDS`) at module load time and reject any feeds outside this set. Enforce a minimum TLS version of TLSv1.2 (`context.minimum_version = ssl.TLSVersion.TLSv1_2`) explicitly on mail server contexts to prevent downgrade attacks.
