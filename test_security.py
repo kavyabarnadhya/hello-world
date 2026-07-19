@@ -143,5 +143,49 @@ class TestSecurity(unittest.TestCase):
         # The separator is \x00. We must ensure it's not in the result.
         self.assertNotIn("\x00", classified_encoded[0]["summary"])
 
+    @patch("digest.feedparser.parse")
+    def test_fetch_from_feed_whitelist(self, mock_parse):
+        # Setup mock_parse to return empty entries
+        mock_parse.return_value.entries = []
+
+        # Unauthorized URL should raise ValueError
+        with self.assertRaisesRegex(ValueError, "Unauthorized feed URL"):
+            digest.fetch_from_feed("https://unauthorized.domain.com/feed", "Unauthorized")
+
+        # Authorized URL should pass whitelist check and call feedparser
+        # Get one of the whitelisted URLs
+        authorized_url = list(digest.ALLOWED_FEEDS)[0]
+        try:
+            digest.fetch_from_feed(authorized_url, "Authorized")
+        except Exception as e:
+            self.fail(f"fetch_from_feed raised unexpected exception on authorized URL: {e}")
+
+        mock_parse.assert_called_once_with(authorized_url)
+
+    @patch("digest.smtplib.SMTP_SSL")
+    @patch("digest.os.getenv")
+    def test_send_email_enforces_tls_version(self, mock_getenv, mock_smtp):
+        # Setup env variables
+        mock_getenv.side_effect = lambda key, default=None: {
+            "SENDER_EMAIL": "sender@test.test",
+            "SENDER_APP_PASSWORD": "abcd efgh ijkl mnop",
+            "RECEIVER_EMAIL": "receiver@test.test"
+        }.get(key, default)
+
+        # Call send_email with dummy body
+        try:
+            digest.send_email("<html></html>", 0, 0)
+        except Exception:
+            pass # We only care about the SSL context passed to SMTP_SSL
+
+        # SMTP_SSL is called with (host, port, context=context, timeout=30)
+        # Check that it was called, and that the context keyword argument had minimum_version set
+        self.assertTrue(mock_smtp.called)
+        kwargs = mock_smtp.call_args[1]
+        context = kwargs.get("context")
+        self.assertIsNotNone(context)
+        import ssl
+        self.assertEqual(context.minimum_version, ssl.TLSVersion.TLSv1_2)
+
 if __name__ == "__main__":
     unittest.main()

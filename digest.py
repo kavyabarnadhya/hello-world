@@ -135,6 +135,9 @@ EXPANSION_FEEDS = {
     ],
 }
 
+# Security: Whitelist of allowed RSS feed URLs to prevent SSRF and unauthorized outgoing requests
+ALLOWED_FEEDS = set(FEEDS.values()) | {url for urls in EXPANSION_FEEDS.values() for url in urls}
+
 TOPIC_COLORS = {
     "International Relations": "#c0392b",
     "Economy": "#196f3d",
@@ -248,6 +251,9 @@ def fetch_from_feed(url, source_name, limit=3):
     # Security: Enforce web protocols for all RSS feeds to prevent local file disclosure (LFD)
     if not isinstance(url, str) or not url.lower().startswith(("http://", "https://")):
         raise ValueError(f"Secure protocol required: HTTP or HTTPS. Received: {url}")
+    # Security: Restrict fetching to whitelisted RSS feed URLs to prevent SSRF and unauthorized requests
+    if url not in ALLOWED_FEEDS:
+        raise ValueError(f"Unauthorized feed URL: {url}")
 
     articles = []
     try:
@@ -815,6 +821,8 @@ def send_email(html_body, total_articles=None, reading_time=None):
 
     today = datetime.now().strftime("%B %d, %Y")
     context = ssl.create_default_context()
+    # Security: Enforce minimum TLS version of TLSv1.2 to prevent protocol downgrade attacks
+    context.minimum_version = ssl.TLSVersion.TLSv1_2
 
     # Performance Optimization: Pre-calculate the MIMEText body part once outside the loop
     # to avoid redundant re-encoding and memory allocation cycles for each recipient.
