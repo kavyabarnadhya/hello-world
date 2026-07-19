@@ -136,10 +136,10 @@ EXPANSION_FEEDS = {
 }
 
 TOPIC_COLORS = {
-    "International Relations": "#c0392b",
+    "International Relations": "#a93226",
     "Economy": "#196f3d",
     "Polity & Governance": "#21618c",
-    "Security & Defence": "#8e44ad",
+    "Security & Defence": "#6c3483",
     "History & Culture": "#a04000",
     "Environment & Ecology": "#117864",
     "Social Issues": "#515a5a",
@@ -530,7 +530,7 @@ def render_html(grouped, category_angles):
         # Optimization: Use pre-calculated topic header fragments
         header_html = TOPIC_HEADERS_HTML.get(topic, SAFE_TOPIC_NAMES.get(topic, topic))
         sections_parts.append(f"""
-        <section id="{anchor}" aria-labelledby="{header_id}" class="topic-section">
+        <section id="{anchor}" aria-labelledby="{header_id}" class="topic-section" tabindex="-1">
           <h2 id="{header_id}" class="topic-header" style="background:{color};">
             {header_html}
           </h2>
@@ -561,6 +561,9 @@ def render_html(grouped, category_angles):
       outline: 2px solid #1a1a2e;
       outline-offset: 2px;
     }}
+    [tabindex="-1"]:focus {{
+      outline: none !important;
+    }}
     .index-list {{ list-style: none; padding: 0; margin: 0; }}
     .index-item {{ display: inline-block; margin: 0; }}
     .topic-pill {{
@@ -577,6 +580,8 @@ def render_html(grouped, category_angles):
     .topic-pill:hover, .topic-pill:focus-visible {{
       transform: translateY(-1px) !important;
       filter: brightness(110%) !important;
+      outline: 2px solid #1a1a2e !important;
+      outline-offset: 2px;
     }}
     .topic-section {{ margin-bottom: 36px; }}
     .topic-header {{
@@ -724,13 +729,13 @@ def render_html(grouped, category_angles):
     </div>
 
     <!-- Topic Index Bar -->
-    <nav id="topic-index" class="topic-index" aria-labelledby="topic-index-header">
+    <nav id="topic-index" class="topic-index" aria-labelledby="topic-index-header" tabindex="-1">
       <h2 id="topic-index-header" class="topic-index-header">Topics in this digest</h2>
       <div>{index_bar_items}</div>
     </nav>
 
     <!-- Article Sections -->
-    <main id="main-content">
+    <main id="main-content" tabindex="-1">
       {sections_html}
     </main>
 
