@@ -257,6 +257,8 @@ def fetch_from_feed(url, source_name, limit=3):
 
     articles = []
     try:
+        # Performance Optimization: Pre-clean constant source_name outside of loop to save redundant clean_text CPU cycles
+        clean_source = clean_text(source_name, max_len=100)
         feed = feedparser.parse(url)
         for entry in feed.entries[:limit]:
             raw_summary = getattr(entry, "summary", "") or getattr(entry, "description", "")
@@ -269,7 +271,7 @@ def fetch_from_feed(url, source_name, limit=3):
                 "title": clean_text(str(entry.get("title", "")), max_len=200),
                 "link":  clean_text(str(entry.get("link", "")), max_len=500),
                 "summary": summary,
-                "source": clean_text(source_name, max_len=100),
+                "source": clean_source,
             })
         print(f"  [{source_name}] fetched {len(articles)} articles")
     except Exception as e:
