@@ -83,6 +83,12 @@ def clean_text(text, max_len=2000, strip_tags=True):
 # Initialize Groq client once at the module level for resource reuse
 _groq_client = None
 
+# Performance Optimization & Security Standard: Initialize a secure SSL context once at the module level
+# to reuse across all network operations (RSS fetching and SMTP email sending).
+# This prevents redundant system-wide certificate authority loads and context initializations.
+_SECURE_SSL_CONTEXT = ssl.create_default_context()
+_SECURE_SSL_CONTEXT.minimum_version = ssl.TLSVersion.TLSv1_2
+
 
 def get_groq_client():
     global _groq_client
@@ -253,9 +259,8 @@ def fetch_feed_data_safely(url, timeout=15, max_bytes=10 * 1024 * 1024):
     explicit timeout, and secure SSL context to prevent Resource Exhaustion (DoS),
     unintended file disclosure, and SSL downgrade/bypass attacks.
     """
-    # Create a secure SSL context enforcing minimum TLSv1.2
-    context = ssl.create_default_context()
-    context.minimum_version = ssl.TLSVersion.TLSv1_2
+    # Performance Optimization: Reuse the pre-calculated global secure SSL context
+    context = _SECURE_SSL_CONTEXT
 
     req = urllib.request.Request(
         url,
@@ -880,9 +885,8 @@ def send_email(html_body, total_articles=None, reading_time=None):
     ))
 
     today = datetime.now().strftime("%B %d, %Y")
-    context = ssl.create_default_context()
-    # Security: Enforce minimum TLS version of TLSv1.2 to prevent protocol downgrade attacks
-    context.minimum_version = ssl.TLSVersion.TLSv1_2
+    # Performance Optimization: Reuse the pre-calculated global secure SSL context
+    context = _SECURE_SSL_CONTEXT
 
     # Performance Optimization: Pre-calculate the MIMEText body part once outside the loop
     # to avoid redundant re-encoding and memory allocation cycles for each recipient.
