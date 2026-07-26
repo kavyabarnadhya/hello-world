@@ -3,10 +3,6 @@
 **Action:** Always verify color contrast using a tool (or standard darker hex codes) and use semantic headers (`<h3>`) even when the visual design requires inline styling to mimic spans.
 
 ## 2025-05-16 - [Scannability and Assistive Noise Reduction in Digests]
-**Learning:** For daily digests, scannability is paramount. Adding article counts to navigation and an estimated reading time significantly reduces the cognitive load for the user. Additionally, while emojis and decorative arrows provide visual delight, they create unnecessary noise for screen readers in an already dense email;  is essential for these elements.
-**Action:** Always include "at-a-glance" meta-info (counts, time) in headers and wrap all decorative glyphs in  spans.
-
-## 2025-05-16 - [Scannability and Assistive Noise Reduction in Digests]
 **Learning:** For daily digests, scannability is paramount. Adding article counts to navigation and an estimated reading time significantly reduces the cognitive load for the user. Additionally, while emojis and decorative arrows provide visual delight, they create unnecessary noise for screen readers in an already dense email; `aria-hidden="true"` is essential for these elements.
 **Action:** Always include "at-a-glance" meta-info (counts, time) in headers and wrap all decorative glyphs in `aria-hidden="true"` spans.
 
@@ -29,3 +25,7 @@
 ## 2026-07-19 - [Robust Programmatic Focus Management and Contrast in HTML Email Jumps]
 **Learning:** When using in-page skip-links and anchor links (e.g., jump-to-section) inside HTML emails, screen readers and key-based browsers often fail to redirect focus to non-interactive container targets (such as `<nav>`, `<main>`, and `<section>`). Setting `tabindex="-1"` on these target elements enables robust programmatic focus shifting, while suppressing browser-default visual focus rings with `[tabindex="-1"]:focus { outline: none !important; }` avoids visual clutter. Additionally, focus outlines on interactive components (like `.topic-pill`) must contrast sharply against parent card backgrounds (e.g. using theme colors like `#1a1a2e` in light mode, `#fff` in dark mode) to comply with WCAG 2.4.7.
 **Action:** Always use `tabindex="-1"` on target containers of skiplinks/anchor links and customize `:focus-visible` outline colors to contrast explicitly against the actual parent card or background.
+
+## 2026-07-20 - [Non-disruptive Skip-Links and Elevated Contrast in Dark Mode Email Readers]
+**Learning:** Skip-to-content links that display inline (`position: static`) upon receiving focus cause massive visual layout shifts that disrupt the reading flow. Centering focused links absolutely (`position: absolute; left: 50%; top: 10px; transform: translateX(-50%);`) solves this layout shift while keeping the focus element highly visible. Furthermore, default dark mode focus indicator outlines (like `#1a1a2e` on color categories) suffer from zero contrast on dark canvases; explicit white outlines (`#fff`) and elevated box-shadow highlights for container hovers/focuses are essential to preserve accessibility.
+**Action:** Design skip-links to overlay absolutely to prevent layout shifts, and override interactive focus styles with white outlines in prefers-color-scheme dark rules.

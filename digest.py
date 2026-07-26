@@ -718,14 +718,20 @@ def render_html(grouped, category_angles):
     }}
     .footer {{ text-align: center; padding: 20px; color: #5e5e5e; font-size: 12px; }}
     .skip-link:focus {{
-      position: static !important;
+      position: absolute !important;
+      left: 50% !important;
+      top: 10px !important;
+      transform: translateX(-50%) !important;
       width: auto !important;
       height: auto !important;
       overflow: visible !important;
-      background: #fff;
-      padding: 10px;
-      border: 2px solid #1a1a2e;
-      z-index: 9999;
+      background: #1a1a2e !important;
+      color: #fff !important;
+      padding: 10px 20px !important;
+      border: 2px solid #fff !important;
+      border-radius: 4px !important;
+      text-decoration: none !important;
+      z-index: 9999 !important;
     }}
     @media (prefers-color-scheme: dark) {{
       body {{ background: #121212 !important; color: #e0e0e0 !important; }}
@@ -741,6 +747,13 @@ def render_html(grouped, category_angles):
       .footer {{ color: #888 !important; }}
       .back-to-top a {{ color: #aaa !important; }}
       a:focus-visible {{ outline-color: #fff !important; }}
+      .topic-pill:hover, .topic-pill:focus-visible {{
+        outline-color: #fff !important;
+      }}
+      .article-card:hover, .article-card:focus-within {{
+        border-color: #666 !important;
+        box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05) !important;
+      }}
     }}
     @media print {{
       body {{ background: #fff !important; }}
