@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 import os
 import digest
 
@@ -143,8 +143,15 @@ class TestSecurity(unittest.TestCase):
         # The separator is \x00. We must ensure it's not in the result.
         self.assertNotIn("\x00", classified_encoded[0]["summary"])
 
+    @patch("digest.urllib.request.urlopen")
     @patch("digest.feedparser.parse")
-    def test_fetch_from_feed_whitelist(self, mock_parse):
+    def test_fetch_from_feed_whitelist(self, mock_parse, mock_urlopen):
+        # Setup mock_urlopen to return mock data and headers safely
+        mock_response = MagicMock()
+        mock_response.read.side_effect = [b"<rss></rss>", b""]
+        mock_response.headers = {"Content-Type": "text/xml"}
+        mock_urlopen.return_value.__enter__.return_value = mock_response
+
         # Setup mock_parse to return empty entries
         mock_parse.return_value.entries = []
 
@@ -153,14 +160,36 @@ class TestSecurity(unittest.TestCase):
             digest.fetch_from_feed("https://unauthorized.domain.com/feed", "Unauthorized")
 
         # Authorized URL should pass whitelist check and call feedparser
-        # Get one of the whitelisted URLs
         authorized_url = list(digest.ALLOWED_FEEDS)[0]
         try:
             digest.fetch_from_feed(authorized_url, "Authorized")
         except Exception as e:
             self.fail(f"fetch_from_feed raised unexpected exception on authorized URL: {e}")
 
-        mock_parse.assert_called_once_with(authorized_url)
+        expected_headers = {"Content-Type": "text/xml", "content-location": authorized_url}
+        mock_parse.assert_called_once_with(b"<rss></rss>", response_headers=expected_headers)
+
+    @patch("digest.urllib.request.urlopen")
+    def test_fetch_feed_data_safely_oversized_headers(self, mock_urlopen):
+        # Setup mock_urlopen response with Content-Length header that is too large
+        mock_response = MagicMock()
+        mock_response.headers = {"Content-Length": str(20 * 1024 * 1024)}  # 20MB
+        mock_urlopen.return_value.__enter__.return_value = mock_response
+
+        with self.assertRaisesRegex(ValueError, "Feed content too large"):
+            digest.fetch_feed_data_safely("https://some-feed.com", max_bytes=10 * 1024 * 1024)
+
+    @patch("digest.urllib.request.urlopen")
+    def test_fetch_feed_data_safely_oversized_stream(self, mock_urlopen):
+        # Setup mock_urlopen response returning more data than max_bytes
+        mock_response = MagicMock()
+        mock_response.headers = {}
+        # First read returns 5 bytes, second read (the overflow check) returns b"x"
+        mock_response.read.side_effect = [b"abcde", b"x"]
+        mock_urlopen.return_value.__enter__.return_value = mock_response
+
+        with self.assertRaisesRegex(ValueError, "Feed content exceeds maximum size"):
+            digest.fetch_feed_data_safely("https://some-feed.com", max_bytes=5)
 
     @patch("digest.smtplib.SMTP_SSL")
     @patch("digest.os.getenv")
