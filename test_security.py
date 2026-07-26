@@ -187,5 +187,37 @@ class TestSecurity(unittest.TestCase):
         import ssl
         self.assertEqual(context.minimum_version, ssl.TLSVersion.TLSv1_2)
 
+    def test_rendered_html_css_improvements(self):
+        # Verify that our CSS improvements are correctly present in the rendered HTML
+        grouped = {
+            "Polity & Governance": [
+                {
+                    "title": "Article Title",
+                    "link": "https://example.com/art",
+                    "source": "The Hindu",
+                    "summary": "This is a summary mapping to GS-II."
+                }
+            ]
+        }
+        category_angles = {
+            "Polity & Governance": ["Exam relevance bullet point."]
+        }
+        html_body, _, _ = digest.render_html(grouped, category_angles)
+
+        # Check skip-link focus rule uses top/left/transform for centering absolute position
+        self.assertIn("position: absolute !important;", html_body)
+        self.assertIn("left: 50% !important;", html_body)
+        self.assertIn("top: 10px !important;", html_body)
+        self.assertIn("transform: translateX(-50%) !important;", html_body)
+        self.assertIn("background: #1a1a2e !important;", html_body)
+
+        # Check topic pill outline color on focus in dark mode
+        self.assertIn(".topic-pill:hover, .topic-pill:focus-visible", html_body)
+        self.assertIn("outline-color: #fff !important;", html_body)
+
+        # Check article-card hover state in dark mode
+        self.assertIn(".article-card:hover, .article-card:focus-within", html_body)
+        self.assertIn("box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05) !important;", html_body)
+
 if __name__ == "__main__":
     unittest.main()
