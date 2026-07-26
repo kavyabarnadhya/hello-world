@@ -40,3 +40,8 @@
 **Vulnerability:** Risk of Server-Side Request Forgery (SSRF), unauthorized outgoing network requests, or TLS protocol downgrade attacks on SMTP connections.
 **Learning:** Even if the application currently uses a fixed list of static RSS feeds, dynamically fetched URL parameters are vulnerable if downstream modules are modified. In addition, default SSL contexts can sometimes allow weak legacy protocols depending on the client system configuration.
 **Prevention:** Define a strict whitelisted set of URLs (`ALLOWED_FEEDS`) at module load time and reject any feeds outside this set. Enforce a minimum TLS version of TLSv1.2 (`context.minimum_version = ssl.TLSVersion.TLSv1_2`) explicitly on mail server contexts to prevent downgrade attacks.
+
+## 2026-07-19 - Safe RSS Data Fetching and Resource Exhaustion (DoS) Mitigation
+**Vulnerability:** Denial of Service (DoS) / Out-Of-Memory (OOM) crashes if external RSS feed servers return excessively large payloads or infinite streams during fetching.
+**Learning:** `feedparser.parse(url)` fetches URLs using raw, unbounded urllib requests without response content length limits. Passing raw URLs to third-party parsing libraries exposes the application to resource exhaustion or decompression bomb payloads.
+**Prevention:** Explicitly fetch RSS feed data using a custom `urllib.request` handler. Set an explicit network `timeout`, enforce a strict content length limit, truncate/verify stream data reading, use a secure SSL/TLS context enforcing `TLSv1.2` minimum, and pass parsed byte payloads and headers to `feedparser`.

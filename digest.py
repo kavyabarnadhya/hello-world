@@ -5,6 +5,7 @@ import smtplib
 import socket
 import ssl
 import html
+import urllib.request
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import collections
@@ -246,6 +247,41 @@ TOPIC_ORDER = [
 ]
 
 
+def fetch_feed_data_safely(url, timeout=15, max_bytes=10 * 1024 * 1024):
+    """
+    Security Enhancement: Safely fetch the RSS feed content with a strict size limit,
+    explicit timeout, and secure SSL context to prevent Resource Exhaustion (DoS),
+    unintended file disclosure, and SSL downgrade/bypass attacks.
+    """
+    # Create a secure SSL context enforcing minimum TLSv1.2
+    context = ssl.create_default_context()
+    context.minimum_version = ssl.TLSVersion.TLSv1_2
+
+    req = urllib.request.Request(
+        url,
+        headers={"User-Agent": "UPSC-News-Digest/1.0"}
+    )
+    with urllib.request.urlopen(req, timeout=timeout, context=context) as response:
+        content_length = response.headers.get("Content-Length")
+        if content_length:
+            try:
+                length_val = int(content_length)
+            except ValueError:
+                length_val = None
+
+            if length_val is not None and length_val > max_bytes:
+                raise ValueError(f"Feed content too large: {content_length} bytes")
+
+        data = response.read(max_bytes)
+        # If there's still more data, raise ValueError to prevent DoS via infinite stream
+        if response.read(1):
+            raise ValueError(f"Feed content exceeds maximum size of {max_bytes} bytes")
+
+        headers = dict(response.headers)
+        headers["content-location"] = url
+        return data, headers
+
+
 def fetch_from_feed(url, source_name, limit=3):
     """Fetch up to `limit` articles from a single RSS feed URL."""
     # Security: Enforce web protocols for all RSS feeds to prevent local file disclosure (LFD)
@@ -259,7 +295,11 @@ def fetch_from_feed(url, source_name, limit=3):
     try:
         # Performance Optimization: Pre-clean constant source_name outside of loop to save redundant clean_text CPU cycles
         clean_source = clean_text(source_name, max_len=100)
-        feed = feedparser.parse(url)
+
+        # Security: Fetch feed securely with strict limits to prevent DoS and insecure SSL config
+        data, headers = fetch_feed_data_safely(url)
+        feed = feedparser.parse(data, response_headers=headers)
+
         for entry in feed.entries[:limit]:
             raw_summary = getattr(entry, "summary", "") or getattr(entry, "description", "")
             # Apply clean_text early to save memory and token budget
