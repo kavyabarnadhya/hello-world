@@ -143,14 +143,16 @@ class TestSecurity(unittest.TestCase):
         # The separator is \x00. We must ensure it's not in the result.
         self.assertNotIn("\x00", classified_encoded[0]["summary"])
 
-    @patch("digest.urllib.request.urlopen")
+    @patch("digest.urllib.request.build_opener")
     @patch("digest.feedparser.parse")
-    def test_fetch_from_feed_whitelist(self, mock_parse, mock_urlopen):
-        # Setup mock_urlopen to return mock data and headers safely
+    def test_fetch_from_feed_whitelist(self, mock_parse, mock_build_opener):
+        # Setup mock opener and response to return mock data and headers safely
+        mock_opener = MagicMock()
         mock_response = MagicMock()
         mock_response.read.side_effect = [b"<rss></rss>", b""]
         mock_response.headers = {"Content-Type": "text/xml"}
-        mock_urlopen.return_value.__enter__.return_value = mock_response
+        mock_opener.open.return_value.__enter__.return_value = mock_response
+        mock_build_opener.return_value = mock_opener
 
         # Setup mock_parse to return empty entries
         mock_parse.return_value.entries = []
@@ -169,27 +171,50 @@ class TestSecurity(unittest.TestCase):
         expected_headers = {"Content-Type": "text/xml", "content-location": authorized_url}
         mock_parse.assert_called_once_with(b"<rss></rss>", response_headers=expected_headers)
 
-    @patch("digest.urllib.request.urlopen")
-    def test_fetch_feed_data_safely_oversized_headers(self, mock_urlopen):
-        # Setup mock_urlopen response with Content-Length header that is too large
+    @patch("digest.urllib.request.build_opener")
+    def test_fetch_feed_data_safely_oversized_headers(self, mock_build_opener):
+        # Setup mock opener and response with Content-Length header that is too large
+        mock_opener = MagicMock()
         mock_response = MagicMock()
         mock_response.headers = {"Content-Length": str(20 * 1024 * 1024)}  # 20MB
-        mock_urlopen.return_value.__enter__.return_value = mock_response
+        mock_opener.open.return_value.__enter__.return_value = mock_response
+        mock_build_opener.return_value = mock_opener
 
         with self.assertRaisesRegex(ValueError, "Feed content too large"):
             digest.fetch_feed_data_safely("https://some-feed.com", max_bytes=10 * 1024 * 1024)
 
-    @patch("digest.urllib.request.urlopen")
-    def test_fetch_feed_data_safely_oversized_stream(self, mock_urlopen):
-        # Setup mock_urlopen response returning more data than max_bytes
+    @patch("digest.urllib.request.build_opener")
+    def test_fetch_feed_data_safely_oversized_stream(self, mock_build_opener):
+        # Setup mock opener and response returning more data than max_bytes
+        mock_opener = MagicMock()
         mock_response = MagicMock()
         mock_response.headers = {}
         # First read returns 5 bytes, second read (the overflow check) returns b"x"
         mock_response.read.side_effect = [b"abcde", b"x"]
-        mock_urlopen.return_value.__enter__.return_value = mock_response
+        mock_opener.open.return_value.__enter__.return_value = mock_response
+        mock_build_opener.return_value = mock_opener
 
         with self.assertRaisesRegex(ValueError, "Feed content exceeds maximum size"):
             digest.fetch_feed_data_safely("https://some-feed.com", max_bytes=5)
+
+    def test_safe_redirect_handler_unauthorized(self):
+        handler = digest.SafeRedirectHandler()
+        # Non-whitelisted URL should raise ValueError
+        with self.assertRaisesRegex(ValueError, "Unauthorized redirect target"):
+            handler.redirect_request(None, None, 302, "Found", None, "https://unauthorized.domain.com/feed")
+
+    def test_safe_redirect_handler_invalid_scheme(self):
+        handler = digest.SafeRedirectHandler()
+        # Invalid scheme should raise ValueError
+        with self.assertRaisesRegex(ValueError, "Secure protocol required for redirect"):
+            handler.redirect_request(None, None, 302, "Found", None, "file:///etc/passwd")
+
+    def test_safe_redirect_handler_authorized(self):
+        handler = digest.SafeRedirectHandler()
+        authorized_url = list(digest.ALLOWED_FEEDS)[0]
+        with patch("urllib.request.HTTPRedirectHandler.redirect_request") as mock_super:
+            handler.redirect_request(None, None, 302, "Found", None, authorized_url)
+            mock_super.assert_called_once_with(None, None, 302, "Found", None, authorized_url)
 
     @patch("digest.smtplib.SMTP_SSL")
     @patch("digest.os.getenv")

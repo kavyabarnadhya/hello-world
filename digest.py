@@ -253,6 +253,21 @@ TOPIC_ORDER = [
 ]
 
 
+class SafeRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """
+    Security: Custom redirect handler to prevent Server-Side Request Forgery (SSRF)
+    via open redirects on whitelisted feed URLs.
+    """
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        # Ensure redirect URL has a safe web protocol
+        if not isinstance(newurl, str) or not newurl.lower().startswith(("http://", "https://")):
+            raise ValueError(f"Secure protocol required for redirect: HTTP or HTTPS. Received: {newurl}")
+        # Enforce that redirect target is also in the ALLOWED_FEEDS whitelist
+        if newurl not in ALLOWED_FEEDS:
+            raise ValueError(f"Unauthorized redirect target: {newurl}")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
 def fetch_feed_data_safely(url, timeout=15, max_bytes=10 * 1024 * 1024):
     """
     Security Enhancement: Safely fetch the RSS feed content with a strict size limit,
@@ -266,7 +281,12 @@ def fetch_feed_data_safely(url, timeout=15, max_bytes=10 * 1024 * 1024):
         url,
         headers={"User-Agent": "UPSC-News-Digest/1.0"}
     )
-    with urllib.request.urlopen(req, timeout=timeout, context=context) as response:
+    # Security: Build a secure opener that enforces redirect whitelisting
+    opener = urllib.request.build_opener(
+        urllib.request.HTTPSHandler(context=context),
+        SafeRedirectHandler()
+    )
+    with opener.open(req, timeout=timeout) as response:
         content_length = response.headers.get("Content-Length")
         if content_length:
             try:

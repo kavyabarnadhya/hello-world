@@ -45,3 +45,8 @@
 **Vulnerability:** Denial of Service (DoS) / Out-Of-Memory (OOM) crashes if external RSS feed servers return excessively large payloads or infinite streams during fetching.
 **Learning:** `feedparser.parse(url)` fetches URLs using raw, unbounded urllib requests without response content length limits. Passing raw URLs to third-party parsing libraries exposes the application to resource exhaustion or decompression bomb payloads.
 **Prevention:** Explicitly fetch RSS feed data using a custom `urllib.request` handler. Set an explicit network `timeout`, enforce a strict content length limit, truncate/verify stream data reading, use a secure SSL/TLS context enforcing `TLSv1.2` minimum, and pass parsed byte payloads and headers to `feedparser`.
+
+## 2026-07-26 - SSRF via Open Redirect on Whitelisted Domains
+**Vulnerability:** Server-Side Request Forgery (SSRF) bypass because `urllib.request` automatically follows HTTP/HTTPS redirects. Whitelisting the initial feed URLs does not prevent the remote server from redirecting the fetcher to internal/private resources or non-whitelisted domains.
+**Learning:** Whitelisting domains or URLs at the client level before triggering requests is insufficient when the underlying HTTP library automatically follows redirects. Redirect targets must be validated with the same security checks as the initial request.
+**Prevention:** Subclass `urllib.request.HTTPRedirectHandler` to intercept redirects and validate that the redirected URL (`newurl`) has a safe scheme (HTTP/HTTPS) and is present in the `ALLOWED_FEEDS` whitelist. Register this handler using `urllib.request.build_opener`.
