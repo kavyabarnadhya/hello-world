@@ -29,3 +29,7 @@
 ## 2026-07-20 - [Non-disruptive Skip-Links and Elevated Contrast in Dark Mode Email Readers]
 **Learning:** Skip-to-content links that display inline (`position: static`) upon receiving focus cause massive visual layout shifts that disrupt the reading flow. Centering focused links absolutely (`position: absolute; left: 50%; top: 10px; transform: translateX(-50%);`) solves this layout shift while keeping the focus element highly visible. Furthermore, default dark mode focus indicator outlines (like `#1a1a2e` on color categories) suffer from zero contrast on dark canvases; explicit white outlines (`#fff`) and elevated box-shadow highlights for container hovers/focuses are essential to preserve accessibility.
 **Action:** Design skip-links to overlay absolutely to prevent layout shifts, and override interactive focus styles with white outlines in prefers-color-scheme dark rules.
+
+## 2026-07-21 - [Print Optimization and Link Disclosure for Offline Study]
+**Learning:** For study-heavy content, users frequently print materials to study offline. Appending target URLs next to active anchor links (e.g., using `a::after { content: " (" attr(href) ")"; }`) ensures that printed copies retain the contextual resource information, while hiding interactive actions like "Read full article" reduces visual clutter and paper consumption.
+**Action:** Always include a print media query that hides interactive elements and dynamically reveals destination links beside the text anchors.

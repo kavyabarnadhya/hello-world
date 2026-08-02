@@ -701,7 +701,17 @@ def render_html(grouped, category_angles):
       border-radius: 12px;
     }}
     .article-summary {{ color: #444; font-size: 14px; line-height: 1.6; margin: 0 0 12px 0; }}
-    .read-more {{ font-size: 13px; font-weight: 600; text-decoration: none; }}
+    .read-more {{
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: filter 0.2s, transform 0.2s;
+      display: inline-block;
+    }}
+    .read-more:hover, .read-more:focus-visible {{
+      filter: brightness(110%);
+      transform: translateX(4px);
+    }}
     .source-container {{ margin-bottom: 10px; }}
     .exam-angles {{
       background: #fefce8;
@@ -722,7 +732,17 @@ def render_html(grouped, category_angles):
     .exam-angles-list {{ margin: 8px 0 0 0; padding-left: 18px; }}
     .exam-angle-bullet {{ margin: 4px 0; color: #78350f; font-size: 13px; line-height: 1.5; }}
     .back-to-top {{ text-align: right; }}
-    .back-to-top-link {{ color: #666; font-size: 12px; text-decoration: none; }}
+    .back-to-top-link {{
+      color: #666;
+      font-size: 12px;
+      text-decoration: none;
+      transition: color 0.2s, transform 0.2s;
+      display: inline-block;
+    }}
+    .back-to-top-link:hover, .back-to-top-link:focus-visible {{
+      color: #1a1a2e;
+      transform: translateY(-2px);
+    }}
     .main-header {{ background: #1a1a2e; border-radius: 10px; padding: 28px 30px; margin-bottom: 24px; text-align: center; }}
     .main-title {{ color: #fff; margin: 0 0 6px 0; font-size: 26px; font-weight: 700; letter-spacing: 1px; }}
     .main-subtitle {{ color: #aaa; margin: 0; font-size: 14px; }}
@@ -771,6 +791,9 @@ def render_html(grouped, category_angles):
       .gs-tag {{ background: #444 !important; color: #fff !important; }}
       .footer {{ color: #888 !important; }}
       .back-to-top a {{ color: #aaa !important; }}
+      .back-to-top-link:hover, .back-to-top-link:focus-visible {{
+        color: #fff !important;
+      }}
       a:focus-visible {{ outline-color: #fff !important; }}
       .topic-pill:hover, .topic-pill:focus-visible {{
         outline-color: #fff !important;
@@ -783,8 +806,14 @@ def render_html(grouped, category_angles):
     @media print {{
       body {{ background: #fff !important; }}
       #top {{ max-width: 100% !important; padding: 0 !important; }}
-      .skip-link, .topic-index, .back-to-top {{ display: none !important; }}
+      .skip-link, .topic-index, .back-to-top, .read-more {{ display: none !important; }}
       .article-card, .exam-angles {{ break-inside: avoid; border: 1px solid #eee !important; }}
+      .article-title a::after {{
+        content: " (" attr(href) ")";
+        font-weight: normal;
+        font-size: 13px;
+        color: #555;
+      }}
       .footer {{ border-top: 1px solid #eee; margin-top: 20px; }}
     }}
   </style>
@@ -803,7 +832,7 @@ def render_html(grouped, category_angles):
     </a>
 
     <!-- Header -->
-    <div class="main-header">
+    <header class="main-header" role="banner">
       <h1 class="main-title">
         UPSC News Digest
       </h1>
@@ -812,7 +841,7 @@ def render_html(grouped, category_angles):
         <span aria-hidden="true">📰 </span>{total_articles} articles <span aria-hidden="true">&bull;</span>
         <span aria-hidden="true">⏱️ </span>{reading_time} min read
       </p>
-    </div>
+    </header>
 
     <!-- Topic Index Bar -->
     <nav id="topic-index" class="topic-index" aria-labelledby="topic-index-header" tabindex="-1">
@@ -826,9 +855,9 @@ def render_html(grouped, category_angles):
     </main>
 
     <!-- Footer -->
-    <div class="footer">
+    <footer class="footer" role="contentinfo">
       Generated automatically by UPSC News Digest <span aria-hidden="true">&bull;</span> Powered by Llama 3.3 via Groq
-    </div>
+    </footer>
   </div>
 </body>
 </html>"""
