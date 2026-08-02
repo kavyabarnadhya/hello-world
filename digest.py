@@ -31,6 +31,9 @@ CONTROL_CHAR_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 GS_RE = re.compile(r"(GS-[IVX]+)")
 GS_BOLD = r'<strong class="gs-tag">\1</strong>'
 
+# Pre-compiled regex for email validation (used in validate_env to prevent compilation in loops or function calls)
+EMAIL_RE = re.compile(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$")
+
 
 def bold_gs(text):
     """
@@ -88,6 +91,23 @@ _groq_client = None
 # This prevents redundant system-wide certificate authority loads and context initializations.
 _SECURE_SSL_CONTEXT = ssl.create_default_context()
 _SECURE_SSL_CONTEXT.minimum_version = ssl.TLSVersion.TLSv1_2
+
+# Performance Optimization: Cache the secure URL opener as a singleton to avoid building
+# a new HTTPS handler and redirect handler on every RSS feed request (saving CPU and allocations).
+_SECURE_OPENER = None
+
+
+def get_secure_opener():
+    """
+    Performance Optimization: Get or lazily initialize the secure URL opener.
+    """
+    global _SECURE_OPENER
+    if _SECURE_OPENER is None:
+        _SECURE_OPENER = urllib.request.build_opener(
+            urllib.request.HTTPSHandler(context=_SECURE_SSL_CONTEXT),
+            SafeRedirectHandler()
+        )
+    return _SECURE_OPENER
 
 
 def get_groq_client():
@@ -274,18 +294,13 @@ def fetch_feed_data_safely(url, timeout=15, max_bytes=10 * 1024 * 1024):
     explicit timeout, and secure SSL context to prevent Resource Exhaustion (DoS),
     unintended file disclosure, and SSL downgrade/bypass attacks.
     """
-    # Performance Optimization: Reuse the pre-calculated global secure SSL context
-    context = _SECURE_SSL_CONTEXT
-
     req = urllib.request.Request(
         url,
         headers={"User-Agent": "UPSC-News-Digest/1.0"}
     )
-    # Security: Build a secure opener that enforces redirect whitelisting
-    opener = urllib.request.build_opener(
-        urllib.request.HTTPSHandler(context=context),
-        SafeRedirectHandler()
-    )
+    # Performance Optimization: Retrieve the cached secure opener singleton
+    # instead of repeatedly rebuilding it with the HTTPSHandler and SafeRedirectHandler.
+    opener = get_secure_opener()
     with opener.open(req, timeout=timeout) as response:
         content_length = response.headers.get("Content-Length")
         if content_length:
@@ -891,10 +906,8 @@ def validate_env():
             raise ValueError(f"Environment variable {var} appears to contain a placeholder value.")
 
     # Basic email format validation for sender and receiver
-    email_regex = re.compile(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$")
-
     sender = os.getenv("SENDER_EMAIL", "").strip()
-    if not email_regex.match(sender):
+    if not EMAIL_RE.match(sender):
         raise ValueError("SENDER_EMAIL does not appear to be a valid email address.")
 
     # Security: Validate GROQ_API_KEY format (starts with gsk_) and minimum length
@@ -915,7 +928,7 @@ def validate_env():
     if len(receivers) > 50:
         raise ValueError(f"Too many recipients ({len(receivers)}). Maximum allowed is 50.")
     for r in receivers:
-        if not email_regex.match(r):
+        if not EMAIL_RE.match(r):
             raise ValueError(f"RECEIVER_EMAIL contains an invalid email address: {r}")
 
 

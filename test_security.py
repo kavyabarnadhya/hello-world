@@ -6,6 +6,9 @@ import digest
 class TestSecurity(unittest.TestCase):
 
     def setUp(self):
+        # Reset the cached secure opener singleton before each test to guarantee mocking isolation
+        digest._SECURE_OPENER = None
+
         # Default valid environment variables for testing
         # Using .test instead of example.com to avoid placeholder check
         self.valid_env = {
