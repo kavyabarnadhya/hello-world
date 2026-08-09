@@ -33,3 +33,7 @@
 ## 2026-07-21 - [Print Optimization and Link Disclosure for Offline Study]
 **Learning:** For study-heavy content, users frequently print materials to study offline. Appending target URLs next to active anchor links (e.g., using `a::after { content: " (" attr(href) ")"; }`) ensures that printed copies retain the contextual resource information, while hiding interactive actions like "Read full article" reduces visual clutter and paper consumption.
 **Action:** Always include a print media query that hides interactive elements and dynamically reveals destination links beside the text anchors.
+
+## 2026-08-09 - [Accessible Stretched Links on Card Layouts]
+**Learning:** When implementing stretched links (making an entire card clickable using a pseudo-element `::after` on a nested anchor tag) for high touch-target accessibility (WCAG Target Size), sibling interactive elements and text content can be buried under the absolute overlay if not properly structured. Giving elements like paragraph text, tags, and detail links `position: relative` and a higher `z-index` restores their separate accessibility and text-selectability. Additionally, any print-specific layouts must override/reset these pseudo-elements to prevent overlay interference during hard-copy rendering.
+**Action:** Always use relative positioning with `z-index: 2` on text contents and secondary links inside a stretched-link container, and explicitly disable or reset the `::after` overlay within the `@media print` query.

@@ -690,11 +690,30 @@ def render_html(grouped, category_angles):
       padding: 18px 20px;
       margin-bottom: 16px;
       display: block;
+      position: relative;
       transition: border-color 0.2s, box-shadow 0.2s;
     }}
     .article-card:hover, .article-card:focus-within {{
       border-color: #999 !important;
       box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+    }}
+    .article-title a::after {{
+      content: "";
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      z-index: 1;
+    }}
+    .read-more {{
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: filter 0.2s, transform 0.2s;
+      display: inline-block;
+      position: relative;
+      z-index: 2;
     }}
     .gs-tag {{
       background: #1a1a2e;
@@ -705,7 +724,7 @@ def render_html(grouped, category_angles):
       letter-spacing: 0.5px;
       display: inline-block;
     }}
-    .article-title {{ margin: 0 0 8px 0; font-size: 17px; font-weight: 700; letter-spacing: 0.2px; }}
+    .article-title {{ margin: 0 0 8px 0; font-size: 17px; font-weight: 700; letter-spacing: 0.2px; position: relative; z-index: 2; }}
     .article-title a {{ color: #1a1a1a; text-decoration: none; }}
     .source-badge {{
       background: #f0f0f0;
@@ -715,19 +734,12 @@ def render_html(grouped, category_angles):
       padding: 3px 9px;
       border-radius: 12px;
     }}
-    .article-summary {{ color: #444; font-size: 14px; line-height: 1.6; margin: 0 0 12px 0; }}
-    .read-more {{
-      font-size: 13px;
-      font-weight: 600;
-      text-decoration: none;
-      transition: filter 0.2s, transform 0.2s;
-      display: inline-block;
-    }}
+    .article-summary {{ color: #444; font-size: 14px; line-height: 1.6; margin: 0 0 12px 0; position: relative; z-index: 2; }}
     .read-more:hover, .read-more:focus-visible {{
       filter: brightness(110%);
       transform: translateX(4px);
     }}
-    .source-container {{ margin-bottom: 10px; }}
+    .source-container {{ margin-bottom: 10px; position: relative; z-index: 2; }}
     .exam-angles {{
       background: #fefce8;
       border-left: 4px solid #f59e0b;
@@ -824,10 +836,12 @@ def render_html(grouped, category_angles):
       .skip-link, .topic-index, .back-to-top, .read-more {{ display: none !important; }}
       .article-card, .exam-angles {{ break-inside: avoid; border: 1px solid #eee !important; }}
       .article-title a::after {{
-        content: " (" attr(href) ")";
-        font-weight: normal;
-        font-size: 13px;
-        color: #555;
+        content: " (" attr(href) ")" !important;
+        position: static !important;
+        z-index: auto !important;
+        font-weight: normal !important;
+        font-size: 13px !important;
+        color: #555 !important;
       }}
       .footer {{ border-top: 1px solid #eee; margin-top: 20px; }}
     }}
