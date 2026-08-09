@@ -897,7 +897,7 @@ def validate_env():
             raise ValueError(f"Environment variable {var} exceeds maximum length of {max_len} characters.")
 
         # Security: Reject control characters to prevent header injection or other malformed input issues
-        if "\r" in val or "\n" in val:
+        if CONTROL_CHAR_RE.search(val) or "\r" in val or "\n" in val:
             raise ValueError(f"Environment variable {var} contains forbidden control characters.")
 
         # Security: Prevent usage of placeholder values from .env.example or common patterns
