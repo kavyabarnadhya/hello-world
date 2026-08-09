@@ -76,6 +76,13 @@ class TestSecurity(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "contains forbidden control characters"):
                 digest.validate_env()
 
+        # Test control character (ESC) injection detection
+        env = self.valid_env.copy()
+        env["SENDER_APP_PASSWORD"] = "password\x1bwith_esc"
+        with patch.dict(os.environ, env, clear=True):
+            with self.assertRaisesRegex(ValueError, "contains forbidden control characters"):
+                digest.validate_env()
+
     def test_validate_env_large_input_dos(self):
         env = self.valid_env.copy()
         env["SENDER_APP_PASSWORD"] = "a" * 1000000
