@@ -251,6 +251,27 @@ class TestSecurity(unittest.TestCase):
         import ssl
         self.assertEqual(context.minimum_version, ssl.TLSVersion.TLSv1_2)
 
+    def test_batch_process_text_strips_null_bytes(self):
+        # Input strings containing embedded null bytes
+        dirty_texts = ["Title1\x00Injected", "Title2", "Title3\x00Part2"]
+        processed = digest.batch_process_text(dirty_texts, do_bold=False)
+        self.assertEqual(len(processed), 3)
+        self.assertEqual(processed[0], "Title1Injected")
+        self.assertEqual(processed[1], "Title2")
+        self.assertEqual(processed[2], "Title3Part2")
+
+    @patch("digest.Groq")
+    @patch("digest.os.getenv")
+    def test_get_groq_client_strips_key_whitespace(self, mock_getenv, mock_groq):
+        digest._groq_client = None
+        mock_getenv.return_value = "  gsk_test_key_with_spaces  "
+        client = digest.get_groq_client()
+        mock_groq.assert_called_once_with(
+            api_key="gsk_test_key_with_spaces",
+            timeout=60.0
+        )
+        digest._groq_client = None
+
     def test_rendered_html_css_improvements(self):
         # Verify that our CSS improvements are correctly present in the rendered HTML
         grouped = {

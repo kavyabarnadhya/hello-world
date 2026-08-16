@@ -51,11 +51,13 @@ def batch_process_text(texts, do_bold=False):
     Performance Optimization: Batch processes multiple strings for HTML escaping and
     optional GS bolding. This reduces the number of function calls and regex engine
     context switches by ~2x compared to individual processing.
+    Security: Ensure any null bytes are stripped before joining to prevent delimiter injection.
     """
     if not texts:
         return []
-    # Use null byte as separator as it is already stripped during clean_text
-    joined = "\x00".join(texts)
+    # Security: Strip null bytes defense-in-depth to prevent array element corruption during split
+    sanitized_texts = [t.replace("\x00", "") for t in texts]
+    joined = "\x00".join(sanitized_texts)
     # Perform single batch HTML escape
     safe = html.escape(joined)
     # Perform single batch GS bolding if requested
@@ -113,8 +115,10 @@ def get_secure_opener():
 def get_groq_client():
     global _groq_client
     if _groq_client is None:
+        raw_key = os.getenv("GROQ_API_KEY")
+        api_key = raw_key.strip() if raw_key else None
         _groq_client = Groq(
-            api_key=os.getenv("GROQ_API_KEY"),
+            api_key=api_key,
             timeout=60.0  # Security: Set explicit timeout to prevent indefinite hangs
         )
     return _groq_client
@@ -950,7 +954,8 @@ def send_email(html_body, total_articles=None, reading_time=None):
     # Security: Sanitize sender email to prevent header injection
     sender_raw = os.getenv("SENDER_EMAIL")
     sender = sender_raw.strip().replace("\r", "").replace("\n", "") if sender_raw else None
-    password = os.getenv("SENDER_APP_PASSWORD")
+    password_raw = os.getenv("SENDER_APP_PASSWORD")
+    password = password_raw.strip() if password_raw else None
     receiver_raw = os.getenv("RECEIVER_EMAIL")
 
     # Support comma-separated list of recipients and deduplicate to prevent redundant sends.
@@ -1037,8 +1042,9 @@ if __name__ == "__main__":
         with ThreadPoolExecutor(max_workers=10) as executor:
             futures = []
             for url in expansion_urls_to_fetch:
-                # Security: Truncate source name to prevent extremely long identifiers
-                source_name = url.split("/")[2][:50]  # e.g. thewire.in
+                # Security: Truncate source name to prevent extremely long identifiers with safe bounds check
+                parts = url.split("/")
+                source_name = parts[2][:50] if len(parts) > 2 else "expansion"
                 futures.append(executor.submit(fetch_from_feed, url, source_name, limit=3))
             for future in futures:
                 for article in future.result():
