@@ -735,6 +735,7 @@ def render_html(grouped, category_angles):
       border-radius: 12px;
     }}
     .article-summary {{ color: #444; font-size: 14px; line-height: 1.6; margin: 0 0 12px 0; position: relative; z-index: 2; }}
+    .article-card:hover .read-more, .article-card:focus-within .read-more,
     .read-more:hover, .read-more:focus-visible {{
       filter: brightness(110%);
       transform: translateX(4px);
