@@ -309,5 +309,45 @@ class TestSecurity(unittest.TestCase):
         self.assertIn('<span aria-hidden="true">&rarr;</span>', html_body)
         self.assertIn(".article-card:hover .read-more, .article-card:focus-within .read-more", html_body)
 
+    def test_process_llm_articles_filters_invalid_topics(self):
+        articles = [{"title": "T1", "link": "http://l1", "source": "S1", "summary": "Sum1"}]
+        llm_data = {
+            "articles": [{"index": 0, "topic": "Economy", "summary": "Sum1"}],
+            "category_angles": {
+                "Economy": ["Valid angle."],
+                "Invalid Hallucinated Topic": ["Invalid angle."]
+            }
+        }
+        classified, angles = digest.process_llm_articles(articles, llm_data)
+        self.assertIn("Economy", angles)
+        self.assertNotIn("Invalid Hallucinated Topic", angles)
+
+    @patch("digest.os.getenv")
+    def test_send_email_raises_on_missing_credentials(self, mock_getenv):
+        mock_getenv.side_effect = lambda key, default="": ""
+        with self.assertRaisesRegex(ValueError, "Missing required email credentials or receivers"):
+            digest.send_email("<html></html>", 0, 0)
+
+    @patch("digest.smtplib.SMTP_SSL")
+    @patch("digest.os.getenv")
+    def test_send_email_strips_control_characters(self, mock_getenv, mock_smtp):
+        mock_getenv.side_effect = lambda key, default=None: {
+            "SENDER_EMAIL": "sender\r\n@test.test\x1b",
+            "SENDER_APP_PASSWORD": "abcd efgh ijkl mnop",
+            "RECEIVER_EMAIL": "receiver1\n@test.test\x00, receiver2@test.test"
+        }.get(key, default)
+
+        mock_server = MagicMock()
+        mock_smtp.return_value.__enter__.return_value = mock_server
+
+        digest.send_email("<html></html>", "10", "5")
+
+        self.assertTrue(mock_server.sendmail.called)
+        # Verify call recipient addresses clean
+        sender_arg = mock_server.sendmail.call_args_list[0][0][0]
+        recipients_arg = mock_server.sendmail.call_args_list[0][0][1]
+        self.assertEqual(sender_arg, "sender@test.test")
+        self.assertIn("receiver1@test.test", recipients_arg)
+
 if __name__ == "__main__":
     unittest.main()

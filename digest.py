@@ -396,16 +396,20 @@ def process_llm_articles(articles, data):
     raw_angles = data.get("category_angles")
     category_angles = {}
 
-    # Security: Sanitize and limit the number of category angles
+    # Security: Sanitize, validate topic names, and limit the number of category angles
     if isinstance(raw_angles, dict):
         # Limit to 20 topics maximum to prevent DoS via extremely large JSON objects
         for i, (topic, angles) in enumerate(raw_angles.items()):
             if i >= 20:
                 break
+            # Security: Validate topic name against TOPIC_COLORS to filter hallucinated topics
+            topic_str = str(topic)
+            if topic_str not in TOPIC_COLORS:
+                continue
             if isinstance(angles, list):
                 # Security: Strip control characters to prevent collisions in batch processing
                 # Limit to 5 bullets per topic, each max 300 chars
-                category_angles[str(topic)] = [
+                category_angles[topic_str] = [
                     clean_text(str(b), max_len=300, strip_tags=False) for b in angles[:5]
                 ]
 
@@ -954,19 +958,22 @@ def validate_env():
 
 
 def send_email(html_body, total_articles=None, reading_time=None):
-    # Security: Sanitize sender email to prevent header injection
-    sender_raw = os.getenv("SENDER_EMAIL")
-    sender = sender_raw.strip().replace("\r", "").replace("\n", "") if sender_raw else None
-    password_raw = os.getenv("SENDER_APP_PASSWORD")
-    password = password_raw.strip() if password_raw else None
-    receiver_raw = os.getenv("RECEIVER_EMAIL")
+    # Security: Sanitize sender and receiver emails using CONTROL_CHAR_RE to prevent header injection
+    sender_raw = os.getenv("SENDER_EMAIL", "")
+    sender = CONTROL_CHAR_RE.sub("", sender_raw.strip().replace("\r", "").replace("\n", ""))
+    password_raw = os.getenv("SENDER_APP_PASSWORD", "")
+    password = password_raw.strip()
+    receiver_raw = os.getenv("RECEIVER_EMAIL", "")
 
     # Support comma-separated list of recipients and deduplicate to prevent redundant sends.
-    # Security: Strip newline characters to prevent email header injection.
+    # Security: Strip newline and control characters to prevent email header injection.
     receivers = sorted(set(
-        r.strip().replace("\r", "").replace("\n", "")
+        CONTROL_CHAR_RE.sub("", r.strip().replace("\r", "").replace("\n", ""))
         for r in receiver_raw.split(",") if r.strip()
     ))
+
+    if not sender or not password or not receivers:
+        raise ValueError("Missing required email credentials or receivers in send_email")
 
     today = datetime.now().strftime("%B %d, %Y")
     # Performance Optimization: Reuse the pre-calculated global secure SSL context
@@ -978,7 +985,12 @@ def send_email(html_body, total_articles=None, reading_time=None):
     # for each recipient. This achieves a ~100x speedup in MIME generation for multi-recipient lists.
     subject = f"UPSC News Digest – {today}"
     if total_articles is not None and reading_time is not None:
-        subject += f" ({total_articles} articles • {reading_time} min read)"
+        try:
+            art_count = int(total_articles)
+            read_mins = int(reading_time)
+            subject += f" ({art_count} articles • {read_mins} min read)"
+        except (ValueError, TypeError):
+            pass
 
     # Security: Explicitly set charset to UTF-8 for consistent rendering and security.
     msg = MIMEText(html_body, "html", _charset="utf-8")
