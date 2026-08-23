@@ -305,7 +305,8 @@ class TestSecurity(unittest.TestCase):
         self.assertIn("box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05) !important;", html_body)
 
         # Check read-more accessibility and card hover animation
-        self.assertIn('class="read-more" aria-label="Read full article: Article Title"', html_body)
+        self.assertIn('class="read-more" aria-label="Read full article: Article Title (opens in new tab)"', html_body)
+        self.assertIn('target="_blank" rel="noopener noreferrer"', html_body)
         self.assertIn('<span aria-hidden="true">&rarr;</span>', html_body)
         self.assertIn(".article-card:hover .read-more, .article-card:focus-within .read-more", html_body)
 
