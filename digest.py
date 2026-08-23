@@ -599,7 +599,7 @@ def render_html(grouped, category_angles):
             cards_parts.append(f"""
             <article class="article-card" style="border-left-color:{color};">
               <h3 class="article-title">
-                <a href="{safe_link}">{safe_title}</a>
+                <a href="{safe_link}" target="_blank" rel="noopener noreferrer">{safe_title}</a>
               </h3>
               <div class="source-container">
                 <span class="source-badge">{source_icon}{safe_source}</span>
@@ -607,7 +607,7 @@ def render_html(grouped, category_angles):
               <p class="article-summary">
                 {safe_summary}
               </p>
-              <a href="{safe_link}" class="read-more" aria-label="Read full article: {safe_title}"
+              <a href="{safe_link}" target="_blank" rel="noopener noreferrer" class="read-more" aria-label="Read full article: {safe_title} (opens in new tab)"
                  style="color:{color};">Read full article&nbsp;<span aria-hidden="true">&rarr;</span></a>
             </article>""")
         cards_html = "".join(cards_parts)
