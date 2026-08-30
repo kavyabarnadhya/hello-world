@@ -226,6 +226,24 @@ class TestSecurity(unittest.TestCase):
             handler.redirect_request(None, None, 302, "Found", None, authorized_url)
             mock_super.assert_called_once_with(None, None, 302, "Found", None, authorized_url)
 
+    def test_safe_redirect_handler_relative_authorized(self):
+        handler = digest.SafeRedirectHandler()
+        authorized_url = "https://www.thehindu.com/news/national/feeder/default.rss"
+        req = MagicMock()
+        req.full_url = "https://www.thehindu.com/news/national/"
+
+        with patch("urllib.request.HTTPRedirectHandler.redirect_request") as mock_super:
+            handler.redirect_request(req, None, 302, "Found", None, "feeder/default.rss")
+            mock_super.assert_called_once_with(req, None, 302, "Found", None, authorized_url)
+
+    def test_safe_redirect_handler_relative_unauthorized(self):
+        handler = digest.SafeRedirectHandler()
+        req = MagicMock()
+        req.full_url = "https://www.thehindu.com/news/"
+
+        with self.assertRaisesRegex(ValueError, "Unauthorized redirect target"):
+            handler.redirect_request(req, None, 302, "Found", None, "/unauthorized/path")
+
     @patch("digest.smtplib.SMTP_SSL")
     @patch("digest.os.getenv")
     def test_send_email_enforces_tls_version(self, mock_getenv, mock_smtp):

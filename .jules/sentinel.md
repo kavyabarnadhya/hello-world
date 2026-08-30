@@ -50,3 +50,8 @@
 **Vulnerability:** Server-Side Request Forgery (SSRF) bypass because `urllib.request` automatically follows HTTP/HTTPS redirects. Whitelisting the initial feed URLs does not prevent the remote server from redirecting the fetcher to internal/private resources or non-whitelisted domains.
 **Learning:** Whitelisting domains or URLs at the client level before triggering requests is insufficient when the underlying HTTP library automatically follows redirects. Redirect targets must be validated with the same security checks as the initial request.
 **Prevention:** Subclass `urllib.request.HTTPRedirectHandler` to intercept redirects and validate that the redirected URL (`newurl`) has a safe scheme (HTTP/HTTPS) and is present in the `ALLOWED_FEEDS` whitelist. Register this handler using `urllib.request.build_opener`.
+
+## 2026-08-02 - Relative Redirect Resolution in Open Redirect Security Handlers
+**Vulnerability:** Application rejection or protocol validation failures when RSS feed servers return relative redirect URLs (e.g. `/rss/news`), because relative URLs do not start with `http://` or `https://` until resolved against the request base URL.
+**Learning:** `urllib.request` passes raw `Location` header values to `redirect_request()`, which can be relative paths. Security handlers that enforce protocol schemes or domain whitelists on redirect targets must resolve relative paths against `req.full_url` prior to validation.
+**Prevention:** Use `urllib.parse.urljoin(req.full_url, newurl)` inside custom `HTTPRedirectHandler` implementations before evaluating scheme or domain whitelists.
