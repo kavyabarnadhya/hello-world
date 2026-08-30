@@ -50,15 +50,17 @@ def bold_gs(text):
 def batch_process_text(texts, do_bold=False):
     """
     Performance Optimization: Batch processes multiple strings for HTML escaping and
-    optional GS bolding. This reduces the number of function calls and regex engine
-    context switches by ~2x compared to individual processing.
-    Security: Ensure any null bytes are stripped before joining to prevent delimiter injection.
+    optional GS bolding. Fast-path check skips element-by-element null byte stripping
+    when no embedded null bytes are present, avoiding O(N) allocations/replaces.
+    Security: Ensures any null bytes within string elements are stripped before joining
+    to prevent array element corruption and delimiter injection during split.
     """
     if not texts:
         return []
-    # Security: Strip null bytes defense-in-depth to prevent array element corruption during split
-    sanitized_texts = [t.replace("\x00", "") for t in texts]
-    joined = "\x00".join(sanitized_texts)
+    joined = "\x00".join(texts)
+    # Security & Performance: Only sanitize individual elements if embedded null bytes exist
+    if joined.count("\x00") != len(texts) - 1:
+        joined = "\x00".join(t.replace("\x00", "") for t in texts)
     # Perform single batch HTML escape
     safe = html.escape(joined)
     # Perform single batch GS bolding if requested
@@ -70,6 +72,7 @@ def batch_process_text(texts, do_bold=False):
 def clean_text(text, max_len=2000, strip_tags=True):
     """
     Performance Optimization: Strips HTML tags and unescapes entities from text.
+    Fast-path check uses CONTROL_CHAR_RE.search before substitution to avoid regex sub overhead.
     Security: Strips control characters after unescaping to prevent bypasses.
     """
     if not text:
@@ -81,8 +84,9 @@ def clean_text(text, max_len=2000, strip_tags=True):
         text = html.unescape(text)
     if strip_tags and "<" in text:
         text = TAG_RE.sub("", text)
-    # Security: Strip null bytes and non-printable control characters AFTER unescaping
-    text = CONTROL_CHAR_RE.sub("", text)
+    # Security: Fast-path check before regex substitution to strip control characters AFTER unescaping
+    if CONTROL_CHAR_RE.search(text):
+        text = CONTROL_CHAR_RE.sub("", text)
     return text.strip()
 
 
