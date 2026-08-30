@@ -845,6 +845,12 @@ def render_html(grouped, category_angles):
         box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05) !important;
       }}
     }}
+    @media (prefers-reduced-motion: reduce) {{
+      html {{ scroll-behavior: auto !important; }}
+      .topic-pill, .article-card, .read-more, .back-to-top-link {{
+        transition: none !important;
+      }}
+    }}
     @media print {{
       body {{ background: #fff !important; }}
       #top {{ max-width: 100% !important; padding: 0 !important; }}

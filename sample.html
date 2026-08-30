@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src *; style-src 'unsafe-inline';">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
+  <title>📰 UPSC News Digest – Sunday, August 30, 2026</title>
+  <style>
+    html { scroll-behavior: smooth; }
+    a:hover { text-decoration: underline !important; }
+    a:focus-visible {
+      outline: 2px solid #1a1a2e;
+      outline-offset: 2px;
+    }
+    [tabindex="-1"]:focus {
+      outline: none !important;
+    }
+    .index-list { list-style: none; padding: 0; margin: 0; }
+    .index-item { display: inline-block; margin: 0; }
+    .topic-pill {
+      display: inline-block;
+      margin: 4px;
+      padding: 6px 14px;
+      color: #fff !important;
+      border-radius: 20px;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      transition: transform 0.2s, filter 0.2s;
+    }
+    .topic-pill:hover, .topic-pill:focus-visible {
+      transform: translateY(-1px) !important;
+      filter: brightness(110%) !important;
+      outline: 2px solid #1a1a2e !important;
+      outline-offset: 2px;
+    }
+    .topic-section { margin-bottom: 36px; }
+    .topic-header {
+      margin: 0 0 16px 0;
+      padding: 12px 20px;
+      color: #fff;
+      border-radius: 6px;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .article-card {
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-left-width: 4px;
+      border-left-style: solid;
+      border-radius: 8px;
+      padding: 18px 20px;
+      margin-bottom: 16px;
+      display: block;
+      position: relative;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .article-card:hover, .article-card:focus-within {
+      border-color: #999 !important;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+    }
+    .article-title a::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      z-index: 1;
+    }
+    .read-more {
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: filter 0.2s, transform 0.2s;
+      display: inline-block;
+      position: relative;
+      z-index: 2;
+    }
+    .gs-tag {
+      background: #1a1a2e;
+      color: #fff !important;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+      letter-spacing: 0.5px;
+      display: inline-block;
+    }
+    .article-title { margin: 0 0 8px 0; font-size: 17px; font-weight: 700; letter-spacing: 0.2px; position: relative; z-index: 2; }
+    .article-title a { color: #1a1a1a; text-decoration: none; }
+    .source-badge {
+      background: #f0f0f0;
+      color: #555;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 3px 9px;
+      border-radius: 12px;
+    }
+    .article-summary { color: #444; font-size: 14px; line-height: 1.6; margin: 0 0 12px 0; position: relative; z-index: 2; }
+    .article-card:hover .read-more, .article-card:focus-within .read-more,
+    .read-more:hover, .read-more:focus-visible {
+      filter: brightness(110%);
+      transform: translateX(4px);
+    }
+    .source-container { margin-bottom: 10px; position: relative; z-index: 2; }
+    .exam-angles {
+      background: #fefce8;
+      border-left: 4px solid #f59e0b;
+      padding: 12px 16px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+    }
+    .exam-angles-header {
+      margin: 0;
+      display: inline;
+      font-size: 12px;
+      font-weight: 700;
+      color: #b45309;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .exam-angles-list { margin: 8px 0 0 0; padding-left: 18px; }
+    .exam-angle-bullet { margin: 4px 0; color: #78350f; font-size: 13px; line-height: 1.5; }
+    .back-to-top { text-align: right; }
+    .back-to-top-link {
+      color: #666;
+      font-size: 12px;
+      text-decoration: none;
+      transition: color 0.2s, transform 0.2s;
+      display: inline-block;
+    }
+    .back-to-top-link:hover, .back-to-top-link:focus-visible {
+      color: #1a1a2e;
+      transform: translateY(-2px);
+    }
+    .main-header { background: #1a1a2e; border-radius: 10px; padding: 28px 30px; margin-bottom: 24px; text-align: center; }
+    .main-title { color: #fff; margin: 0 0 6px 0; font-size: 26px; font-weight: 700; letter-spacing: 1px; }
+    .main-subtitle { color: #aaa; margin: 0; font-size: 14px; }
+    .topic-index {
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin-bottom: 28px;
+    }
+    .topic-index-header {
+      margin: 0 0 10px 0;
+      font-size: 13px;
+      font-weight: 700;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .footer { text-align: center; padding: 20px; color: #5e5e5e; font-size: 12px; }
+    .skip-link:focus {
+      position: absolute !important;
+      left: 50% !important;
+      top: 10px !important;
+      transform: translateX(-50%) !important;
+      width: auto !important;
+      height: auto !important;
+      overflow: visible !important;
+      background: #1a1a2e !important;
+      color: #fff !important;
+      padding: 10px 20px !important;
+      border: 2px solid #fff !important;
+      border-radius: 4px !important;
+      text-decoration: none !important;
+      z-index: 9999 !important;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background: #121212 !important; color: #e0e0e0 !important; }
+      #top { background: #121212 !important; }
+      .topic-index, .article-card { background: #1e1e1e !important; border-color: #333 !important; }
+      .article-card h3 a { color: #e0e0e0 !important; }
+      .article-card p { color: #bbb !important; }
+      .article-card span { background: #333 !important; color: #aaa !important; }
+      .exam-angles { background: #1a1600 !important; border-left-color: #d97706 !important; }
+      .exam-angles h3 { color: #f59e0b !important; }
+      .exam-angles li { color: #d4d4d8 !important; }
+      .gs-tag { background: #444 !important; color: #fff !important; }
+      .footer { color: #888 !important; }
+      .back-to-top a { color: #aaa !important; }
+      .back-to-top-link:hover, .back-to-top-link:focus-visible {
+        color: #fff !important;
+      }
+      a:focus-visible { outline-color: #fff !important; }
+      .topic-pill:hover, .topic-pill:focus-visible {
+        outline-color: #fff !important;
+      }
+      .article-card:hover, .article-card:focus-within {
+        border-color: #666 !important;
+        box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05) !important;
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto !important; }
+      .topic-pill, .article-card, .read-more, .back-to-top-link {
+        transition: none !important;
+      }
+    }
+    @media print {
+      body { background: #fff !important; }
+      #top { max-width: 100% !important; padding: 0 !important; }
+      .skip-link, .topic-index, .back-to-top, .read-more { display: none !important; }
+      .article-card, .exam-angles { break-inside: avoid; border: 1px solid #eee !important; }
+      .article-title a::after {
+        content: " (" attr(href) ")" !important;
+        position: static !important;
+        z-index: auto !important;
+        font-weight: normal !important;
+        font-size: 13px !important;
+        color: #555 !important;
+      }
+      .footer { border-top: 1px solid #eee; margin-top: 20px; }
+    }
+  </style>
+</head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;">
+  <!-- Preheader -->
+  <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;" aria-hidden="true">
+    Today&#x27;s UPSC Digest: 1 curated articles across 1 topics. Reading time: 1 min.
+  </div>
+
+  <div id="top" style="max-width:680px;margin:0 auto;padding:20px;">
+    <!-- Skip to content -->
+    <a href="#main-content" class="skip-link"
+       style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;">
+       Skip to content
+    </a>
+
+    <!-- Header -->
+    <header class="main-header" role="banner">
+      <h1 class="main-title">
+        UPSC News Digest
+      </h1>
+      <p class="main-subtitle">
+        <span aria-hidden="true">📅 </span>Sunday, August 30, 2026 <span aria-hidden="true">&bull;</span>
+        <span aria-hidden="true">📰 </span>1 articles <span aria-hidden="true">&bull;</span>
+        <span aria-hidden="true">⏱️ </span>1 min read
+      </p>
+    </header>
+
+    <!-- Topic Index Bar -->
+    <nav id="topic-index" class="topic-index" aria-labelledby="topic-index-header" tabindex="-1">
+      <h2 id="topic-index-header" class="topic-index-header">Topics in this digest</h2>
+      <div><ul role="list" class="index-list"><li role="listitem" class="index-item"><a href="#polity-and-governance" class="topic-pill" aria-label="Jump to Polity &amp; Governance section - 1 articles, 1 min read" style="background:#21618c;"><span aria-hidden="true">🏛️ </span>Polity &amp; Governance (1) &bull; 1 min</a></li></ul></div>
+    </nav>
+
+    <!-- Article Sections -->
+    <main id="main-content" tabindex="-1">
+
+        <section id="polity-and-governance" aria-labelledby="header-polity-and-governance" class="topic-section" tabindex="-1">
+          <h2 id="header-polity-and-governance" class="topic-header" style="background:#21618c;">
+            <span aria-hidden="true">🏛️ </span>Polity &amp; Governance
+          </h2>
+
+          <div class="exam-angles">
+            <h3 class="exam-angles-header">
+              <span aria-hidden="true">🎓</span> UPSC Exam Angles
+            </h3>
+            <ul class="exam-angles-list"><li class="exam-angle-bullet">Syllabus mapping to <strong class="gs-tag">GS-II</strong></li></ul>
+
+            <div class="back-to-top" style="margin-top: 8px;">
+              <a href="#topic-index" class="back-to-top-link" aria-label="Back to topic index" style="font-size: 11px;">Back to topics&nbsp;<span aria-hidden="true">&uarr;</span></a>
+            </div>
+          </div>
+
+            <article class="article-card" style="border-left-color:#21618c;">
+              <h3 class="article-title">
+                <a href="https://example.com/sc" target="_blank" rel="noopener noreferrer">Supreme Court Landmark Judgment</a>
+              </h3>
+              <div class="source-container">
+                <span class="source-badge"><span aria-hidden="true" style="margin-right:4px;">🗞️</span>The Hindu</span>
+              </div>
+              <p class="article-summary">
+                Summary of <strong class="gs-tag">GS-II</strong> topic decision.
+              </p>
+              <a href="https://example.com/sc" target="_blank" rel="noopener noreferrer" class="read-more" aria-label="Read full article: Supreme Court Landmark Judgment (opens in new tab)"
+                 style="color:#21618c;">Read full article&nbsp;<span aria-hidden="true">&rarr;</span></a>
+            </article>
+
+          <div class="back-to-top">
+            <a href="#topic-index" class="back-to-top-link" aria-label="Back to topic index">Back to topics&nbsp;<span aria-hidden="true">&uarr;</span></a>
+          </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer" role="contentinfo">
+      Generated automatically by UPSC News Digest <span aria-hidden="true">&bull;</span> Powered by Llama 3.3 via Groq
+    </footer>
+  </div>
+</body>
+</html>
