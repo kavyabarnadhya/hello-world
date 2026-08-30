@@ -6,6 +6,7 @@ import socket
 import ssl
 import html
 import urllib.request
+import urllib.parse
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import collections
@@ -283,6 +284,9 @@ class SafeRedirectHandler(urllib.request.HTTPRedirectHandler):
     via open redirects on whitelisted feed URLs.
     """
     def redirect_request(self, req, fp, code, msg, headers, newurl):
+        # Resolve relative redirect URLs against original request URL before validation
+        if isinstance(newurl, str) and getattr(req, "full_url", None):
+            newurl = urllib.parse.urljoin(req.full_url, newurl)
         # Ensure redirect URL has a safe web protocol
         if not isinstance(newurl, str) or not newurl.lower().startswith(("http://", "https://")):
             raise ValueError(f"Secure protocol required for redirect: HTTP or HTTPS. Received: {newurl}")
