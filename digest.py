@@ -74,7 +74,12 @@ def clean_text(text, max_len=2000, strip_tags=True):
     Performance Optimization: Strips HTML tags and unescapes entities from text.
     Fast-path check uses CONTROL_CHAR_RE.search before substitution to avoid regex sub overhead.
     Security: Strips control characters after unescaping to prevent bypasses.
+    Defensive Typing: Ensures non-string inputs are converted to str to prevent TypeError.
     """
+    if text is None:
+        return ""
+    if not isinstance(text, str):
+        text = str(text)
     if not text:
         return ""
     # Optimization: Truncate raw input early to avoid expensive processing on large payloads
@@ -435,7 +440,8 @@ def process_llm_articles(articles, data):
         if topic == "Not UPSC Relevant" or topic not in TOPIC_COLORS:
             continue
         # Security: Validate index is a non-negative integer within bounds AND not already processed
-        if not isinstance(idx, int) or idx < 0 or idx >= len(articles) or idx in seen_indices:
+        # Reject boolean type explicitly since in Python bool subclasses int (isinstance(True, int) is True)
+        if type(idx) is not int or idx < 0 or idx >= len(articles) or idx in seen_indices:
             continue
 
         seen_indices.add(idx)
