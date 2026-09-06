@@ -345,6 +345,32 @@ class TestSecurity(unittest.TestCase):
         self.assertIn("Economy", angles)
         self.assertNotIn("Invalid Hallucinated Topic", angles)
 
+    def test_process_llm_articles_rejects_boolean_index_type_confusion(self):
+        # Python booleans subclass int: isinstance(True, int) is True, True == 1, False == 0.
+        # Ensure process_llm_articles rejects boolean indices from untrusted LLM output.
+        articles = [
+            {"title": "Art 0", "link": "http://l0", "source": "S0", "summary": "Sum0"},
+            {"title": "Art 1", "link": "http://l1", "source": "S1", "summary": "Sum1"},
+        ]
+        llm_data = {
+            "articles": [
+                {"index": True, "topic": "Economy", "summary": "SumTrue"},
+                {"index": False, "topic": "Economy", "summary": "SumFalse"},
+                {"index": 1, "topic": "Economy", "summary": "Valid index 1"}
+            ]
+        }
+        classified, _ = digest.process_llm_articles(articles, llm_data)
+        self.assertEqual(len(classified), 1)
+        self.assertEqual(classified[0]["title"], "Art 1")
+        self.assertEqual(classified[0]["summary"], "Valid index 1")
+
+    def test_clean_text_defensive_typing(self):
+        # Non-string inputs (integers, booleans, dicts, None) should be handled safely
+        self.assertEqual(digest.clean_text(None), "")
+        self.assertEqual(digest.clean_text(12345), "12345")
+        self.assertEqual(digest.clean_text(True), "True")
+        self.assertEqual(digest.clean_text({"key": "val"}), "{'key': 'val'}")
+
     @patch("digest.os.getenv")
     def test_send_email_raises_on_missing_credentials(self, mock_getenv):
         mock_getenv.side_effect = lambda key, default="": ""
